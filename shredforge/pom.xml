@@ -8,9 +8,8 @@
             <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
             <maven.compiler.source>17</maven.compiler.source>
             <maven.compiler.target>17</maven.compiler.target>
-            <!-- JavaFX version and platform classifier (resolved via profiles below) -->
-            <javafx.version>23.0.1</javafx.version>
-            <javafx.platform>mac-aarch64</javafx.platform>
+            <javafx.version>17.0.2</javafx.version>
+            <javafx.platform>win</javafx.platform>
         </properties>
         <repositories>
             <repository>
@@ -24,26 +23,21 @@
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-controls</artifactId>
                 <version>${javafx.version}</version>
-                <classifier>${javafx.platform}</classifier>
             </dependency>
             <dependency>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-fxml</artifactId>
                 <version>${javafx.version}</version>
-                <classifier>${javafx.platform}</classifier>
             </dependency>
             <dependency>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-web</artifactId>
                 <version>${javafx.version}</version>
-                <classifier>${javafx.platform}</classifier>
             </dependency>
-            <!-- Explicitly include graphics to ensure proper platform classifier resolution on ARM64 -->
             <dependency>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-graphics</artifactId>
                 <version>${javafx.version}</version>
-                <classifier>${javafx.platform}</classifier>
             </dependency>
             <!-- TarsosDSP for real-time pitch detection (via JitPack) -->
             <dependency>
@@ -81,9 +75,35 @@
                     </configuration>
                 </plugin>
                 <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>3.3.0</version>
+                    <configuration>
+                        <executable>java</executable>
+                        <arguments>
+                            <argument>-Djavafx.platform=${javafx.platform}</argument>
+                            <argument>-jar</argument>
+                            <argument>${project.build.directory}/${project.build.finalName}.jar</argument>
+                        </arguments>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <!-- Default configuration for running -->
+                            <!-- Usage: mvn clean javafx:run -->
+                            <id>default-cli</id>
+                            <configuration>
+                                <mainClass>com.shredforge.App</mainClass>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
                     <groupId>org.openjfx</groupId>
                     <artifactId>javafx-maven-plugin</artifactId>
                     <version>0.0.8</version>
+                    <configuration>
+                        <mainClass>com.shredforge.App</mainClass>
+                    </configuration>
                     <executions>
                         <execution>
                             <!-- Default configuration for running -->
@@ -223,6 +243,61 @@
                                             <argument>${project.build.directory}/jpackage</argument>
                                             <argument>--java-options</argument>
                                             <argument>--enable-native-access=javafx.graphics</argument>
+                                        </arguments>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    </plugins>
+                </build>
+            </profile>
+            <profile>
+                <id>windows-app-image</id>
+                <activation>
+                    <os>
+                        <family>windows</family>
+                    </os>
+                </activation>
+                <properties>
+                    <app.name>ShredForge</app.name>
+                </properties>
+                <build>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.codehaus.mojo</groupId>
+                            <artifactId>exec-maven-plugin</artifactId>
+                            <version>3.3.0</version>
+                            <executions>
+                                <execution>
+                                    <id>run-jpackage</id>
+                                    <phase>package</phase>
+                                    <goals>
+                                        <goal>exec</goal>
+                                    </goals>
+                                    <configuration>
+                                        <executable>jpackage</executable>
+                                        <arguments>
+                                            <argument>--type</argument>
+                                            <argument>app-image</argument>
+                                            <argument>--name</argument>
+                                            <argument>${app.name}</argument>
+                                            <argument>--app-version</argument>
+                                            <argument>${project.version}</argument>
+                                            <argument>--input</argument>
+                                            <argument>${project.build.directory}</argument>
+                                            <argument>--main-jar</argument>
+                                            <argument>${project.build.finalName}.jar</argument>
+                                            <argument>--main-class</argument>
+                                            <argument>com.shredforge.App</argument>
+                                            <argument>--runtime-image</argument>
+                                            <argument>${project.build.directory}/image</argument>
+                                            <argument>--dest</argument>
+                                            <argument>${project.build.directory}/jpackage</argument>
+                                            <argument>--java-options</argument>
+                                            <argument>--enable-native-access=javafx.graphics</argument>
+                                            <argument>--win-shortcut</argument>
+                                            <argument>--win-menu</argument>
+                                            <argument>--win-dir-chooser</argument>
                                         </arguments>
                                     </configuration>
                                 </execution>
