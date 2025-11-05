@@ -1,0 +1,320 @@
+/* ShredForge Stylesheet */
+
+/* Root Variables */
+.root {
+    -fx-background-dark: #1a1a2e;
+    -fx-background-medium: #16213e;
+    -fx-background-light: #0f3460;
+    -fx-accent-red: #e94560;
+    -fx-accent-cyan: #00d9ff;
+    -fx-accent-green: #00ff88;
+    -fx-accent-orange: #ffaa00;
+    -fx-text-white: #ffffff;
+    -fx-text-gray: #888888;
+}
+
+/* Global Background */
+.border-pane {
+    -fx-background-color: linear-gradient(to bottom, #1a1a2e, #16213e);
+}
+
+/* ListView Styling */
+.list-view {
+    -fx-background-color: #1a1a2e;
+    -fx-border-color: transparent;
+}
+
+.list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-padding: 12 15;
+    -fx-font-size: 14px;
+}
+
+.list-view .list-cell:hover {
+    -fx-background-color: rgba(0, 217, 255, 0.1);
+}
+
+.list-view .list-cell:selected {
+    -fx-background-color: rgba(0, 217, 255, 0.3);
+    -fx-text-fill: #00d9ff;
+}
+
+.list-view:focused .list-cell:selected {
+    -fx-background-color: rgba(0, 217, 255, 0.4);
+}
+
+/* Button Styling */
+.button {
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0, 0, 3);
+}
+
+.button:hover {
+    -fx-opacity: 0.9;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 15, 0, 0, 5);
+}
+
+.button:pressed {
+    -fx-opacity: 0.8;
+    -fx-translate-y: 2px;
+}
+
+/* Primary Button */
+.button-primary {
+    -fx-background-color: #00ff88;
+    -fx-text-fill: #1a1a2e;
+    -fx-font-size: 16px;
+    -fx-padding: 15 30;
+    -fx-background-radius: 10;
+    -fx-font-weight: bold;
+}
+
+/* Secondary Button */
+.button-secondary {
+    -fx-background-color: #00d9ff;
+    -fx-text-fill: #1a1a2e;
+    -fx-font-size: 16px;
+    -fx-padding: 15 30;
+    -fx-background-radius: 10;
+    -fx-font-weight: bold;
+}
+
+/* Danger Button */
+.button-danger {
+    -fx-background-color: #e94560;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-padding: 10 20;
+    -fx-background-radius: 5;
+}
+
+/* Warning Button */
+.button-warning {
+    -fx-background-color: #ffaa00;
+    -fx-text-fill: #1a1a2e;
+    -fx-font-size: 16px;
+    -fx-padding: 15 30;
+    -fx-background-radius: 10;
+    -fx-font-weight: bold;
+}
+
+/* TextArea Styling */
+.text-area {
+    -fx-background-color: #1a1a2e;
+    -fx-control-inner-background: #1a1a2e;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-border-color: #0f3460;
+    -fx-border-width: 2;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+}
+
+.text-area .content {
+    -fx-background-color: #1a1a2e;
+}
+
+.text-area .scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.text-area .scroll-pane .viewport {
+    -fx-background-color: #1a1a2e;
+}
+
+.text-area .scroll-bar:vertical {
+    -fx-background-color: #1a1a2e;
+}
+
+.text-area .scroll-bar:horizontal {
+    -fx-background-color: #1a1a2e;
+}
+
+/* TextField Styling */
+.text-field {
+    -fx-background-color: #1a1a2e;
+    -fx-text-fill: white;
+    -fx-prompt-text-fill: #888;
+    -fx-font-size: 14px;
+    -fx-padding: 10;
+    -fx-border-color: #0f3460;
+    -fx-border-width: 2;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+}
+
+.text-field:focused {
+    -fx-border-color: #00d9ff;
+}
+
+/* ProgressBar Styling */
+.progress-bar {
+    -fx-background-color: #1a1a2e;
+    -fx-background-radius: 10;
+}
+
+.progress-bar .track {
+    -fx-background-color: #1a1a2e;
+    -fx-background-radius: 10;
+}
+
+.progress-bar .bar {
+    -fx-background-color: linear-gradient(to right, #00ff88, #00d9ff);
+    -fx-background-radius: 10;
+    -fx-padding: 4px;
+}
+
+/* Slider Styling */
+.slider {
+    -fx-background-color: transparent;
+}
+
+.slider .track {
+    -fx-background-color: #1a1a2e;
+    -fx-background-radius: 5;
+}
+
+.slider .thumb {
+    -fx-background-color: #00d9ff;
+    -fx-background-radius: 10;
+    -fx-padding: 10px;
+}
+
+.slider .thumb:hover {
+    -fx-background-color: #00ff88;
+}
+
+/* ScrollPane Styling */
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane .scroll-bar:vertical,
+.scroll-pane .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane .scroll-bar .thumb {
+    -fx-background-color: rgba(0, 217, 255, 0.3);
+    -fx-background-radius: 5;
+}
+
+.scroll-pane .scroll-bar .thumb:hover {
+    -fx-background-color: rgba(0, 217, 255, 0.5);
+}
+
+/* Card Styling */
+.card {
+    -fx-background-color: rgba(15, 52, 96, 0.5);
+    -fx-padding: 20;
+    -fx-background-radius: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0, 0, 3);
+}
+
+/* Label Styling */
+.label-title {
+    -fx-text-fill: white;
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+}
+
+.label-subtitle {
+    -fx-text-fill: #00d9ff;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.label-heading {
+    -fx-text-fill: white;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.label-body {
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+}
+
+.label-caption {
+    -fx-text-fill: #888;
+    -fx-font-size: 12px;
+}
+
+.label-highlight {
+    -fx-text-fill: #00ff88;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+/* Canvas Styling */
+.canvas {
+    -fx-background-color: #0a0a0a;
+    -fx-border-color: #00d9ff;
+    -fx-border-width: 2;
+    -fx-border-radius: 5;
+}
+
+/* Separator Styling */
+.separator {
+    -fx-background-color: rgba(136, 136, 136, 0.3);
+}
+
+.separator .line {
+    -fx-border-color: rgba(136, 136, 136, 0.3);
+}
+
+/* Alert Dialog Styling */
+.alert {
+    -fx-background-color: #1a1a2e;
+}
+
+.alert .header-panel {
+    -fx-background-color: #0f3460;
+}
+
+.alert .content {
+    -fx-background-color: #1a1a2e;
+    -fx-text-fill: white;
+}
+
+.alert .button {
+    -fx-background-color: #00d9ff;
+    -fx-text-fill: #1a1a2e;
+}
+
+/* Lesson Category Label */
+.lesson-category {
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 10 0;
+}
+
+/* Animation Classes */
+.fade-in {
+    -fx-opacity: 0;
+    -fx-transition: opacity 0.3s ease-in;
+}
+
+.fade-in:hover {
+    -fx-opacity: 1;
+}
+
+/* Glow Effect for Active Elements */
+.glow-green {
+    -fx-effect: dropshadow(gaussian, #00ff88, 20, 0.7, 0, 0);
+}
+
+.glow-cyan {
+    -fx-effect: dropshadow(gaussian, #00d9ff, 20, 0.7, 0, 0);
+}
+
+.glow-red {
+    -fx-effect: dropshadow(gaussian, #e94560, 20, 0.7, 0, 0);
+}

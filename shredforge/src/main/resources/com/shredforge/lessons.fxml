@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.text.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" 
+            fx:controller="com.shredforge.LessonsController"
+            style="-fx-background-color: linear-gradient(to bottom, #1a1a2e, #16213e);">
+    
+    <!-- Top Bar -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-background-color: #0f3460; -fx-padding: 15;">
+            <Label text="📚 Guitar Lessons" style="-fx-text-fill: #e94560; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="backButton" text="← Back" onAction="#handleBack"
+                    style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 10 20; -fx-background-radius: 5;"/>
+        </HBox>
+    </top>
+    
+    <!-- Main Content -->
+    <center>
+        <HBox spacing="0" VBox.vgrow="ALWAYS">
+            
+            <!-- Left: Categories -->
+            <VBox spacing="0" style="-fx-background-color: #0f3460; -fx-padding: 0;" prefWidth="300">
+                <Label text="Categories" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold; -fx-padding: 20;"/>
+                <ListView fx:id="categoryList" VBox.vgrow="ALWAYS"
+                         style="-fx-background-color: #0f3460; -fx-control-inner-background: #0f3460;"/>
+            </VBox>
+            
+            <!-- Middle: Lessons List -->
+            <VBox spacing="0" style="-fx-background-color: #16213e; -fx-padding: 0;" prefWidth="350" HBox.hgrow="ALWAYS">
+                <VBox style="-fx-padding: 20; -fx-background-color: #16213e;">
+                    <Label fx:id="categoryLabel" text="Select a category" 
+                           style="-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                    <ProgressBar fx:id="categoryProgress" progress="0" prefWidth="300" prefHeight="15"
+                                style="-fx-accent: #00ff88;"/>
+                </VBox>
+                <ListView fx:id="lessonList" VBox.vgrow="ALWAYS"
+                         style="-fx-background-color: #16213e; -fx-control-inner-background: #16213e;"/>
+            </VBox>
+            
+            <!-- Right: Lesson Preview -->
+            <VBox spacing="20" style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 20;" prefWidth="450" HBox.hgrow="ALWAYS">
+                <Label text="Lesson Preview" style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+                
+                <TextArea fx:id="lessonPreview" editable="false" wrapText="true" VBox.vgrow="ALWAYS"
+                         style="-fx-control-inner-background: #1a1a2e; -fx-text-fill: white; -fx-font-size: 14px; -fx-background-color: #1a1a2e;"/>
+                
+                <Button fx:id="startLessonButton" text="▶ Start Lesson" onAction="#handleStartLesson"
+                        style="-fx-background-color: #00ff88; -fx-text-fill: #1a1a2e; -fx-font-size: 18px; -fx-padding: 15 30; -fx-background-radius: 10; -fx-font-weight: bold;"
+                        prefWidth="300"/>
+            </VBox>
+            
+        </HBox>
+    </center>
+    
+</BorderPane>

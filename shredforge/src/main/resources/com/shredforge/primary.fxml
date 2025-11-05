@@ -1,16 +1,118 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.Button?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.text.*?>
+<?import javafx.scene.canvas.Canvas?>
 
-<VBox alignment="CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.shredforge.PrimaryController">
-   <children>
-      <Label text="Primary View" />
-      <Button fx:id="primaryButton" text="Switch to Secondary View" onAction="#switchToSecondary"/>
-   </children>
-   <padding>
-      <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-   </padding>
-</VBox>
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" 
+            fx:controller="com.shredforge.PrimaryController" 
+            style="-fx-background-color: linear-gradient(to bottom, #1a1a2e, #16213e);">
+    
+    <!-- Top Navigation Bar -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-background-color: #0f3460; -fx-padding: 15;">
+            <Label text="🎸 ShredForge" style="-fx-text-fill: #e94560; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="calibrateBtn" text="🎚️ Calibrate" onAction="#handleCalibrate" 
+                    style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 10 20; -fx-background-radius: 5;"/>
+            <Label fx:id="statusLabel" text="Ready to rock! 🤘" 
+                   style="-fx-text-fill: #00d9ff; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+        </HBox>
+    </top>
+    
+    <!-- Main Content Area -->
+    <center>
+        <VBox spacing="20" style="-fx-padding: 20;">
+            
+            <!-- Search Section -->
+            <VBox spacing="10" style="-fx-background-color: rgba(15, 52, 96, 0.5); -fx-padding: 20; -fx-background-radius: 10;">
+                <Label text="Find Your Next Song" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;"/>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <TextField fx:id="searchField" promptText="Search for tabs (e.g., 'Smoke on the Water')..." 
+                              style="-fx-background-color: #1a1a2e; -fx-text-fill: white; -fx-prompt-text-fill: #888; -fx-font-size: 14px; -fx-padding: 10;"
+                              HBox.hgrow="ALWAYS"/>
+                    <Button text="🔍 Search" onAction="#handleSearch"
+                            style="-fx-background-color: #00d9ff; -fx-text-fill: #1a1a2e; -fx-font-size: 14px; -fx-padding: 10 25; -fx-background-radius: 5; -fx-font-weight: bold;"/>
+                </HBox>
+            </VBox>
+            
+            <!-- Two Column Layout -->
+            <HBox spacing="20" VBox.vgrow="ALWAYS">
+                
+                <!-- Left: Tab List -->
+                <VBox spacing="10" style="-fx-background-color: rgba(15, 52, 96, 0.5); -fx-padding: 15; -fx-background-radius: 10;" 
+                      HBox.hgrow="ALWAYS">
+                    <Label text="📋 Available Tabs" style="-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                    <ListView fx:id="tabListView" 
+                             style="-fx-background-color: #1a1a2e; -fx-control-inner-background: #1a1a2e; -fx-text-fill: white;"
+                             VBox.vgrow="ALWAYS"/>
+                </VBox>
+                
+                <!-- Right: Tab Display & Controls -->
+                <VBox spacing="15" style="-fx-background-color: rgba(15, 52, 96, 0.5); -fx-padding: 15; -fx-background-radius: 10;" 
+                      HBox.hgrow="ALWAYS">
+                    <Label text="🎵 Tab Display" style="-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                    
+                    <!-- Tab Canvas -->
+                    <Canvas fx:id="tabCanvas" width="600" height="300" 
+                           style="-fx-background-color: #000; -fx-border-color: #00d9ff; -fx-border-width: 2;"/>
+                    
+                    <!-- Playback Controls -->
+                    <HBox spacing="15" alignment="CENTER">
+                        <Button fx:id="startBtn" text="▶️ Start" onAction="#handleStart"
+                                style="-fx-background-color: #00ff88; -fx-text-fill: #1a1a2e; -fx-font-size: 16px; -fx-padding: 12 30; -fx-background-radius: 5; -fx-font-weight: bold;"/>
+                        <Button fx:id="pauseBtn" text="⏸️ Pause" onAction="#handlePause" disable="true"
+                                style="-fx-background-color: #ffaa00; -fx-text-fill: #1a1a2e; -fx-font-size: 16px; -fx-padding: 12 30; -fx-background-radius: 5; -fx-font-weight: bold;"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label text="Speed:" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                        <Slider fx:id="speedSlider" min="0.25" max="2.0" value="1.0" 
+                               showTickLabels="true" showTickMarks="true" majorTickUnit="0.25"
+                               style="-fx-control-inner-background: #00d9ff;" prefWidth="200"/>
+                        <Label fx:id="speedLabel" text="1.0x" style="-fx-text-fill: #00d9ff; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    </HBox>
+                    
+                    <!-- Performance Stats -->
+                    <HBox spacing="30" alignment="CENTER" style="-fx-background-color: rgba(0, 217, 255, 0.1); -fx-padding: 15; -fx-background-radius: 5;">
+                        <VBox alignment="CENTER" spacing="5">
+                            <Label text="Accuracy" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+                            <Label fx:id="accuracyLabel" text="0.0%" style="-fx-text-fill: #00ff88; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                        </VBox>
+                        <Separator orientation="VERTICAL"/>
+                        <VBox alignment="CENTER" spacing="5">
+                            <Label text="Notes Hit" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+                            <Label fx:id="notesLabel" text="0 / 0" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;"/>
+                        </VBox>
+                        <Separator orientation="VERTICAL"/>
+                        <VBox alignment="CENTER" spacing="5">
+                            <Label text="Grade" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+                            <Label fx:id="gradeLabel" text="-" style="-fx-text-fill: #ffaa00; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                        </VBox>
+                        <Separator orientation="VERTICAL"/>
+                        <VBox alignment="CENTER" spacing="5">
+                            <Label text="Progress" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+                            <ProgressBar fx:id="progressBar" progress="0" prefWidth="150" 
+                                       style="-fx-accent: #e94560;"/>
+                        </VBox>
+                    </HBox>
+                </VBox>
+            </HBox>
+            
+        </VBox>
+    </center>
+    
+    <!-- Bottom Status Bar -->
+    <bottom>
+        <HBox alignment="CENTER" spacing="15" style="-fx-background-color: #0f3460; -fx-padding: 10;">
+            <Label text="🎸 Calibration:" style="-fx-text-fill: #888;"/>
+            <Label fx:id="calibrationStatus" text="Not Calibrated" style="-fx-text-fill: #ff6b6b; -fx-font-weight: bold;"/>
+            <Separator orientation="VERTICAL"/>
+            <Label text="🎵 Current Tab:" style="-fx-text-fill: #888;"/>
+            <Label fx:id="currentTabLabel" text="None" style="-fx-text-fill: white; -fx-font-weight: bold;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label text="Made with ❤️ by Team ShredForge" style="-fx-text-fill: #666;"/>
+        </HBox>
+    </bottom>
+    
+</BorderPane>

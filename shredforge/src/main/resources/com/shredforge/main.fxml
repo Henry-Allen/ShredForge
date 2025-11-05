@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.text.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" 
+            fx:controller="com.shredforge.MainController"
+            fx:id="mainContainer"
+            style="-fx-background-color: linear-gradient(to bottom, #1a1a2e, #16213e);">
+    
+    <!-- Top Bar -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-background-color: #0f3460; -fx-padding: 15;">
+            <Label text="🎸 ShredForge Dashboard" style="-fx-text-fill: #e94560; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="currentTimeLabel" text="Loading..." style="-fx-text-fill: #00d9ff; -fx-font-size: 14px;"/>
+        </HBox>
+    </top>
+    
+    <!-- Main Content -->
+    <center>
+        <ScrollPane fitToWidth="true" style="-fx-background: transparent; -fx-background-color: transparent;">
+            <VBox spacing="20" style="-fx-padding: 20;">
+                
+                <!-- Welcome Section -->
+                <VBox spacing="10" style="-fx-background-color: rgba(15, 52, 96, 0.5); -fx-padding: 20; -fx-background-radius: 10;">
+                    <Label fx:id="welcomeLabel" text="Welcome to ShredForge! 🎸" 
+                           style="-fx-text-fill: white; -fx-font-size: 28px; -fx-font-weight: bold;"/>
+                    <Label text="Your journey to guitar mastery starts here" 
+                           style="-fx-text-fill: #00d9ff; -fx-font-size: 16px;"/>
+                </VBox>
+                
+                <!-- Overall Progress -->
+                <VBox spacing="10" style="-fx-background-color: rgba(15, 52, 96, 0.5); -fx-padding: 20; -fx-background-radius: 10;">
+                    <Label text="Overall Progress" style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+                    <ProgressBar fx:id="overallProgressBar" progress="0.35" prefWidth="600" prefHeight="30"
+                                style="-fx-accent: #00ff88;"/>
+                    <Label fx:id="progressLabel" text="35% Complete - 12/35 Lessons" 
+                           style="-fx-text-fill: #00d9ff; -fx-font-size: 14px;"/>
+                </VBox>
+                
+                <!-- Quick Actions -->
+                <HBox spacing="15" alignment="CENTER">
+                    <Button fx:id="startPracticeButton" text="🎯 Start Practice" onAction="#handleStartPractice"
+                            style="-fx-background-color: #00ff88; -fx-text-fill: #1a1a2e; -fx-font-size: 16px; -fx-padding: 15 30; -fx-background-radius: 10; -fx-font-weight: bold;"
+                            prefWidth="180"/>
+                    <Button fx:id="lessonsButton" text="📚 Browse Lessons" onAction="#handleOpenLessons"
+                            style="-fx-background-color: #00d9ff; -fx-text-fill: #1a1a2e; -fx-font-size: 16px; -fx-padding: 15 30; -fx-background-radius: 10; -fx-font-weight: bold;"
+                            prefWidth="180"/>
+                    <Button fx:id="tunerButton" text="🎚️ Open Tuner" onAction="#handleOpenTuner"
+                            style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-font-size: 16px; -fx-padding: 15 30; -fx-background-radius: 10; -fx-font-weight: bold;"
+                            prefWidth="180"/>
+                    <Button fx:id="statsButton" text="📊 View Stats" onAction="#handleOpenStats"
+                            style="-fx-background-color: #ffaa00; -fx-text-fill: #1a1a2e; -fx-font-size: 16px; -fx-padding: 15 30; -fx-background-radius: 10; -fx-font-weight: bold;"
+                            prefWidth="180"/>
+                </HBox>
+                
+                <!-- Two Column Layout -->
+                <HBox spacing="20" VBox.vgrow="ALWAYS">
+                    
+                    <!-- Recent Sessions -->
+                    <VBox spacing="10" style="-fx-background-color: rgba(15, 52, 96, 0.5); -fx-padding: 20; -fx-background-radius: 10;" HBox.hgrow="ALWAYS">
+                        <Label text="📅 Recent Practice Sessions" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;"/>
+                        <ListView fx:id="recentSessionsList" prefHeight="250"
+                                 style="-fx-background-color: #1a1a2e; -fx-control-inner-background: #1a1a2e; -fx-text-fill: white;"/>
+                    </VBox>
+                    
+                    <!-- Lesson Categories -->
+                    <VBox fx:id="lessonsContainer" spacing="10" 
+                          style="-fx-background-color: rgba(15, 52, 96, 0.5); -fx-padding: 20; -fx-background-radius: 10;" HBox.hgrow="ALWAYS">
+                        <Label text="🎼 Lesson Categories" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;"/>
+                    </VBox>
+                    
+                </HBox>
+                
+            </VBox>
+        </ScrollPane>
+    </center>
+    
+</BorderPane>
