@@ -11,6 +11,8 @@
             <!-- JavaFX version and platform classifier (resolved via os-maven-plugin) -->
             <javafx.version>23.0.1</javafx.version>
             <javafx.platform>mac-aarch64</javafx.platform>
+            <!-- Skip Windows installer by default; enabled only on Windows via a profile -->
+            <skip.windows.installer>true</skip.windows.installer>
         </properties>
         <repositories>
             <repository>
@@ -193,6 +195,75 @@
                         </plugin>
                     </plugins>
                 </build>
+            </profile>
+            <profile>
+                <id>windows-installer</id>
+                <activation>
+                    <os>
+                        <family>windows</family>
+                    </os>
+                </activation>
+                <properties>
+                    <app.name>ShredForge</app.name>
+                    <javafx.platform>win</javafx.platform>
+                </properties>
+                <build>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.codehaus.mojo</groupId>
+                            <artifactId>exec-maven-plugin</artifactId>
+                            <version>3.3.0</version>
+                            <executions>
+                                <execution>
+                                    <id>run-jpackage-windows</id>
+                                    <phase>package</phase>
+                                    <goals>
+                                        <goal>exec</goal>
+                                    </goals>
+                                    <configuration>
+                                        <skip>${skip.windows.installer}</skip>
+                                        <executable>jpackage</executable>
+                                        <arguments>
+                                            <argument>--type</argument>
+                                            <argument>exe</argument>
+                                            <argument>--name</argument>
+                                            <argument>${app.name}</argument>
+                                            <argument>--app-version</argument>
+                                            <argument>${project.version}</argument>
+                                            <argument>--input</argument>
+                                            <argument>${project.build.directory}</argument>
+                                            <argument>--main-jar</argument>
+                                            <argument>${project.build.finalName}.jar</argument>
+                                            <argument>--main-class</argument>
+                                            <argument>com.shredforge.App</argument>
+                                            <argument>--runtime-image</argument>
+                                            <argument>${project.build.directory}/image</argument>
+                                            <argument>--dest</argument>
+                                            <argument>${project.build.directory}/jpackage</argument>
+                                            <argument>--java-options</argument>
+                                            <argument>--enable-native-access=javafx.graphics</argument>
+                                            <argument>--win-shortcut</argument>
+                                        </arguments>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    </plugins>
+                </build>
+            </profile>
+            <profile>
+                <id>windows-os</id>
+                <activation>
+                    <os>
+                        <family>windows</family>
+                    </os>
+                </activation>
+                <properties>
+                    <!-- Enable Windows installer execution on Windows hosts -->
+                    <skip.windows.installer>false</skip.windows.installer>
+                    <!-- Ensure JavaFX resolves Windows artifacts when building on Windows -->
+                    <javafx.platform>win</javafx.platform>
+                </properties>
             </profile>
         </profiles>
     </project>
