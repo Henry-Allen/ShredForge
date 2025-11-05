@@ -4,75 +4,106 @@
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.text.*?>
+<?import javafx.scene.effect.*?>
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" 
             fx:controller="com.shredforge.MainController"
             fx:id="mainContainer"
-            style="-fx-background-color: linear-gradient(to bottom, #1a1a2e, #16213e);">
+            style="-fx-background-color: linear-gradient(to bottom, #0a0a0a, #1a1a2e);">
     
-    <!-- Top Bar -->
     <top>
-        <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-background-color: #0f3460; -fx-padding: 15;">
-            <Label text="🎸 ShredForge Dashboard" style="-fx-text-fill: #e94560; -fx-font-size: 24px; -fx-font-weight: bold;"/>
-            <Region HBox.hgrow="ALWAYS"/>
-            <Label fx:id="currentTimeLabel" text="Loading..." style="-fx-text-fill: #00d9ff; -fx-font-size: 14px;"/>
-        </HBox>
+        <VBox spacing="0">
+            <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-background-color: linear-gradient(to right, #0f3460, #16213e); -fx-padding: 20;">
+                <Label text="🎸 ShredForge" style="-fx-text-fill: #e94560; -fx-font-size: 32px; -fx-font-weight: bold;"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <VBox alignment="CENTER_RIGHT" spacing="5">
+                    <Label text="Current Session" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+                    <Label fx:id="currentTimeLabel" text="Loading..." style="-fx-text-fill: #00d9ff; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                </VBox>
+            </HBox>
+            
+            <HBox alignment="CENTER" spacing="40" style="-fx-background-color: rgba(0, 217, 255, 0.1); -fx-padding: 15;">
+                <VBox alignment="CENTER" spacing="5">
+                    <Label text="🔥 Streak" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+                    <Label text="7 Days" style="-fx-text-fill: #00ff88; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+                </VBox>
+                <Separator orientation="VERTICAL"/>
+                <VBox alignment="CENTER" spacing="5">
+                    <Label text="⏱️ Time" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+                    <Label text="12.5 hrs" style="-fx-text-fill: #00d9ff; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+                </VBox>
+                <Separator orientation="VERTICAL"/>
+                <VBox alignment="CENTER" spacing="5">
+                    <Label text="🎯 Accuracy" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+                    <Label text="87%" style="-fx-text-fill: #ffaa00; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+                </VBox>
+            </HBox>
+        </VBox>
     </top>
     
-    <!-- Main Content -->
     <center>
         <ScrollPane fitToWidth="true" style="-fx-background: transparent; -fx-background-color: transparent;">
-            <VBox spacing="20" style="-fx-padding: 20;">
+            <VBox spacing="25" style="-fx-padding: 25;">
                 
-                <!-- Welcome Section -->
-                <VBox spacing="10" style="-fx-background-color: rgba(15, 52, 96, 0.5); -fx-padding: 20; -fx-background-radius: 10;">
-                    <Label fx:id="welcomeLabel" text="Welcome to ShredForge! 🎸" 
-                           style="-fx-text-fill: white; -fx-font-size: 28px; -fx-font-weight: bold;"/>
-                    <Label text="Your journey to guitar mastery starts here" 
-                           style="-fx-text-fill: #00d9ff; -fx-font-size: 16px;"/>
-                </VBox>
-                
-                <!-- Overall Progress -->
-                <VBox spacing="10" style="-fx-background-color: rgba(15, 52, 96, 0.5); -fx-padding: 20; -fx-background-radius: 10;">
-                    <Label text="Overall Progress" style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;"/>
-                    <ProgressBar fx:id="overallProgressBar" progress="0.35" prefWidth="600" prefHeight="30"
-                                style="-fx-accent: #00ff88;"/>
-                    <Label fx:id="progressLabel" text="35% Complete - 12/35 Lessons" 
-                           style="-fx-text-fill: #00d9ff; -fx-font-size: 14px;"/>
-                </VBox>
-                
-                <!-- Quick Actions -->
-                <HBox spacing="15" alignment="CENTER">
-                    <Button fx:id="startPracticeButton" text="🎯 Start Practice" onAction="#handleStartPractice"
-                            style="-fx-background-color: #00ff88; -fx-text-fill: #1a1a2e; -fx-font-size: 16px; -fx-padding: 15 30; -fx-background-radius: 10; -fx-font-weight: bold;"
-                            prefWidth="180"/>
-                    <Button fx:id="lessonsButton" text="📚 Browse Lessons" onAction="#handleOpenLessons"
-                            style="-fx-background-color: #00d9ff; -fx-text-fill: #1a1a2e; -fx-font-size: 16px; -fx-padding: 15 30; -fx-background-radius: 10; -fx-font-weight: bold;"
-                            prefWidth="180"/>
-                    <Button fx:id="tunerButton" text="🎚️ Open Tuner" onAction="#handleOpenTuner"
-                            style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-font-size: 16px; -fx-padding: 15 30; -fx-background-radius: 10; -fx-font-weight: bold;"
-                            prefWidth="180"/>
-                    <Button fx:id="statsButton" text="📊 View Stats" onAction="#handleOpenStats"
-                            style="-fx-background-color: #ffaa00; -fx-text-fill: #1a1a2e; -fx-font-size: 16px; -fx-padding: 15 30; -fx-background-radius: 10; -fx-font-weight: bold;"
-                            prefWidth="180"/>
+                <HBox spacing="20" style="-fx-background-color: linear-gradient(to right, rgba(233, 69, 96, 0.2), rgba(0, 217, 255, 0.2)); -fx-padding: 30; -fx-background-radius: 15;">
+                    <VBox spacing="10" HBox.hgrow="ALWAYS">
+                        <Label fx:id="welcomeLabel" text="Welcome Back! 🎸" 
+                               style="-fx-text-fill: white; -fx-font-size: 32px; -fx-font-weight: bold;"/>
+                        <Label text="Ready to shred today?" 
+                               style="-fx-text-fill: #00d9ff; -fx-font-size: 18px;"/>
+                    </VBox>
+                    <VBox alignment="CENTER" spacing="10">
+                        <ProgressBar fx:id="overallProgressBar" progress="0.35" prefWidth="120" prefHeight="120"/>
+                        <Label fx:id="progressLabel" text="35% Complete" 
+                               style="-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                    </VBox>
                 </HBox>
                 
-                <!-- Two Column Layout -->
-                <HBox spacing="20" VBox.vgrow="ALWAYS">
+                <GridPane hgap="20" vgap="20">
+                    <VBox spacing="15" style="-fx-background-color: linear-gradient(to bottom right, #00ff88, #00d9ff); -fx-padding: 25; -fx-background-radius: 15;" 
+                          GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <Label text="🎯" style="-fx-font-size: 40px;"/>
+                        <Label text="Practice" style="-fx-text-fill: #1a1a2e; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+                        <Button fx:id="startPracticeButton" text="Start →" onAction="#handleStartPractice"
+                                style="-fx-background-color: #1a1a2e; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 10 20; -fx-background-radius: 8;"/>
+                    </VBox>
                     
-                    <!-- Recent Sessions -->
-                    <VBox spacing="10" style="-fx-background-color: rgba(15, 52, 96, 0.5); -fx-padding: 20; -fx-background-radius: 10;" HBox.hgrow="ALWAYS">
-                        <Label text="📅 Recent Practice Sessions" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;"/>
+                    <VBox spacing="15" style="-fx-background-color: linear-gradient(to bottom right, #00d9ff, #e94560); -fx-padding: 25; -fx-background-radius: 15;" 
+                          GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <Label text="📚" style="-fx-font-size: 40px;"/>
+                        <Label text="Lessons" style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+                        <Button fx:id="lessonsButton" text="Browse →" onAction="#handleOpenLessons"
+                                style="-fx-background-color: white; -fx-text-fill: #1a1a2e; -fx-font-size: 14px; -fx-padding: 10 20; -fx-background-radius: 8;"/>
+                    </VBox>
+                    
+                    <VBox spacing="15" style="-fx-background-color: linear-gradient(to bottom right, #e94560, #ffaa00); -fx-padding: 25; -fx-background-radius: 15;" 
+                          GridPane.columnIndex="0" GridPane.rowIndex="1">
+                        <Label text="🎚️" style="-fx-font-size: 40px;"/>
+                        <Label text="Tuner" style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+                        <Button fx:id="tunerButton" text="Open →" onAction="#handleOpenTuner"
+                                style="-fx-background-color: white; -fx-text-fill: #1a1a2e; -fx-font-size: 14px; -fx-padding: 10 20; -fx-background-radius: 8;"/>
+                    </VBox>
+                    
+                    <VBox spacing="15" style="-fx-background-color: linear-gradient(to bottom right, #ffaa00, #e94560); -fx-padding: 25; -fx-background-radius: 15;" 
+                          GridPane.columnIndex="1" GridPane.rowIndex="1">
+                        <Label text="📊" style="-fx-font-size: 40px;"/>
+                        <Label text="Stats" style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+                        <Button fx:id="statsButton" text="View →" onAction="#handleOpenStats"
+                                style="-fx-background-color: white; -fx-text-fill: #1a1a2e; -fx-font-size: 14px; -fx-padding: 10 20; -fx-background-radius: 8;"/>
+                    </VBox>
+                </GridPane>
+                
+                <HBox spacing="20">
+                    <VBox spacing="15" style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 25; -fx-background-radius: 15;" HBox.hgrow="ALWAYS">
+                        <Label text="📅 Recent Sessions" style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;"/>
                         <ListView fx:id="recentSessionsList" prefHeight="250"
-                                 style="-fx-background-color: #1a1a2e; -fx-control-inner-background: #1a1a2e; -fx-text-fill: white;"/>
+                                 style="-fx-background-color: transparent;"/>
                     </VBox>
                     
-                    <!-- Lesson Categories -->
-                    <VBox fx:id="lessonsContainer" spacing="10" 
-                          style="-fx-background-color: rgba(15, 52, 96, 0.5); -fx-padding: 20; -fx-background-radius: 10;" HBox.hgrow="ALWAYS">
-                        <Label text="🎼 Lesson Categories" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;"/>
+                    <VBox fx:id="lessonsContainer" spacing="15" 
+                          style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 25; -fx-background-radius: 15;" HBox.hgrow="ALWAYS">
+                        <Label text="🎼 Quick Access" style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;"/>
                     </VBox>
-                    
                 </HBox>
                 
             </VBox>

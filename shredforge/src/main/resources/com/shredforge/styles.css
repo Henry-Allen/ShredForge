@@ -1,281 +1,185 @@
-/* ShredForge Stylesheet */
+/* ShredForge Enhanced Stylesheet */
 
-/* Root Variables */
 .root {
-    -fx-background-dark: #1a1a2e;
-    -fx-background-medium: #16213e;
-    -fx-background-light: #0f3460;
-    -fx-accent-red: #e94560;
-    -fx-accent-cyan: #00d9ff;
-    -fx-accent-green: #00ff88;
-    -fx-accent-orange: #ffaa00;
-    -fx-text-white: #ffffff;
-    -fx-text-gray: #888888;
+    -fx-font-family: 'Segoe UI', 'Roboto', 'Helvetica', sans-serif;
 }
 
-/* Global Background */
-.border-pane {
-    -fx-background-color: linear-gradient(to bottom, #1a1a2e, #16213e);
+/* Scrollbar Styling */
+.scroll-bar {
+    -fx-background-color: transparent;
 }
 
-/* ListView Styling */
+.scroll-bar .thumb {
+    -fx-background-color: rgba(0, 217, 255, 0.4);
+    -fx-background-radius: 10;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: rgba(0, 217, 255, 0.6);
+}
+
+.scroll-bar .track {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+/* ListView Enhanced */
 .list-view {
-    -fx-background-color: #1a1a2e;
+    -fx-background-color: transparent;
     -fx-border-color: transparent;
 }
 
 .list-view .list-cell {
     -fx-background-color: transparent;
     -fx-text-fill: white;
-    -fx-padding: 12 15;
+    -fx-padding: 15 20;
     -fx-font-size: 14px;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
 }
 
-.list-view .list-cell:hover {
-    -fx-background-color: rgba(0, 217, 255, 0.1);
+.list-view .list-cell:filled:hover {
+    -fx-background-color: rgba(0, 217, 255, 0.15);
+    -fx-cursor: hand;
 }
 
 .list-view .list-cell:selected {
-    -fx-background-color: rgba(0, 217, 255, 0.3);
-    -fx-text-fill: #00d9ff;
+    -fx-background-color: linear-gradient(to right, rgba(0, 217, 255, 0.3), rgba(0, 255, 136, 0.3));
+    -fx-text-fill: white;
 }
 
-.list-view:focused .list-cell:selected {
-    -fx-background-color: rgba(0, 217, 255, 0.4);
-}
-
-/* Button Styling */
+/* Button Enhancements */
 .button {
     -fx-cursor: hand;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0, 0, 3);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 8, 0, 0, 2);
+    -fx-transition: all 0.2s ease;
 }
 
 .button:hover {
-    -fx-opacity: 0.9;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 15, 0, 0, 5);
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.6), 12, 0, 0, 4);
 }
 
 .button:pressed {
-    -fx-opacity: 0.8;
-    -fx-translate-y: 2px;
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+    -fx-translate-y: 2;
 }
 
-/* Primary Button */
-.button-primary {
-    -fx-background-color: #00ff88;
-    -fx-text-fill: #1a1a2e;
-    -fx-font-size: 16px;
-    -fx-padding: 15 30;
-    -fx-background-radius: 10;
-    -fx-font-weight: bold;
-}
-
-/* Secondary Button */
-.button-secondary {
-    -fx-background-color: #00d9ff;
-    -fx-text-fill: #1a1a2e;
-    -fx-font-size: 16px;
-    -fx-padding: 15 30;
-    -fx-background-radius: 10;
-    -fx-font-weight: bold;
-}
-
-/* Danger Button */
-.button-danger {
-    -fx-background-color: #e94560;
-    -fx-text-fill: white;
-    -fx-font-size: 14px;
-    -fx-padding: 10 20;
-    -fx-background-radius: 5;
-}
-
-/* Warning Button */
-.button-warning {
-    -fx-background-color: #ffaa00;
-    -fx-text-fill: #1a1a2e;
-    -fx-font-size: 16px;
-    -fx-padding: 15 30;
-    -fx-background-radius: 10;
-    -fx-font-weight: bold;
-}
-
-/* TextArea Styling */
+/* TextArea Enhanced */
 .text-area {
-    -fx-background-color: #1a1a2e;
-    -fx-control-inner-background: #1a1a2e;
+    -fx-background-color: transparent;
     -fx-text-fill: white;
     -fx-font-size: 14px;
-    -fx-border-color: #0f3460;
-    -fx-border-width: 2;
-    -fx-border-radius: 5;
-    -fx-background-radius: 5;
+    -fx-border-color: transparent;
 }
 
 .text-area .content {
-    -fx-background-color: #1a1a2e;
+    -fx-background-color: transparent;
 }
 
 .text-area .scroll-pane {
     -fx-background-color: transparent;
 }
 
-.text-area .scroll-pane .viewport {
-    -fx-background-color: #1a1a2e;
+.text-area:focused {
+    -fx-border-color: transparent;
+    -fx-effect: dropshadow(gaussian, rgba(0, 217, 255, 0.3), 8, 0, 0, 0);
 }
 
-.text-area .scroll-bar:vertical {
-    -fx-background-color: #1a1a2e;
-}
-
-.text-area .scroll-bar:horizontal {
-    -fx-background-color: #1a1a2e;
-}
-
-/* TextField Styling */
+/* TextField Enhanced */
 .text-field {
-    -fx-background-color: #1a1a2e;
+    -fx-background-color: rgba(0, 0, 0, 0.3);
     -fx-text-fill: white;
-    -fx-prompt-text-fill: #888;
+    -fx-prompt-text-fill: #666;
     -fx-font-size: 14px;
-    -fx-padding: 10;
-    -fx-border-color: #0f3460;
+    -fx-padding: 12 15;
+    -fx-border-color: rgba(0, 217, 255, 0.3);
     -fx-border-width: 2;
-    -fx-border-radius: 5;
-    -fx-background-radius: 5;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
 }
 
 .text-field:focused {
     -fx-border-color: #00d9ff;
+    -fx-effect: dropshadow(gaussian, rgba(0, 217, 255, 0.5), 10, 0, 0, 0);
 }
 
-/* ProgressBar Styling */
+/* ProgressBar Enhanced */
 .progress-bar {
-    -fx-background-color: #1a1a2e;
+    -fx-background-color: rgba(255, 255, 255, 0.1);
     -fx-background-radius: 10;
 }
 
 .progress-bar .track {
-    -fx-background-color: #1a1a2e;
+    -fx-background-color: rgba(255, 255, 255, 0.05);
     -fx-background-radius: 10;
 }
 
 .progress-bar .bar {
     -fx-background-color: linear-gradient(to right, #00ff88, #00d9ff);
     -fx-background-radius: 10;
-    -fx-padding: 4px;
+    -fx-padding: 5;
 }
 
-/* Slider Styling */
+/* Slider Enhanced */
 .slider {
     -fx-background-color: transparent;
 }
 
 .slider .track {
-    -fx-background-color: #1a1a2e;
+    -fx-background-color: rgba(0, 217, 255, 0.2);
     -fx-background-radius: 5;
+    -fx-pref-height: 6;
 }
 
 .slider .thumb {
     -fx-background-color: #00d9ff;
-    -fx-background-radius: 10;
-    -fx-padding: 10px;
+    -fx-background-radius: 12;
+    -fx-pref-width: 20;
+    -fx-pref-height: 20;
+    -fx-effect: dropshadow(gaussian, rgba(0, 217, 255, 0.6), 8, 0, 0, 0);
 }
 
 .slider .thumb:hover {
     -fx-background-color: #00ff88;
+    -fx-scale-x: 1.2;
+    -fx-scale-y: 1.2;
 }
 
-/* ScrollPane Styling */
-.scroll-pane {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
+.slider .thumb:pressed {
+    -fx-scale-x: 1.1;
+    -fx-scale-y: 1.1;
 }
 
-.scroll-pane .viewport {
-    -fx-background-color: transparent;
-}
-
-.scroll-pane .scroll-bar:vertical,
-.scroll-pane .scroll-bar:horizontal {
-    -fx-background-color: transparent;
-}
-
-.scroll-pane .scroll-bar .thumb {
-    -fx-background-color: rgba(0, 217, 255, 0.3);
-    -fx-background-radius: 5;
-}
-
-.scroll-pane .scroll-bar .thumb:hover {
-    -fx-background-color: rgba(0, 217, 255, 0.5);
-}
-
-/* Card Styling */
-.card {
-    -fx-background-color: rgba(15, 52, 96, 0.5);
-    -fx-padding: 20;
-    -fx-background-radius: 10;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0, 0, 3);
-}
-
-/* Label Styling */
-.label-title {
-    -fx-text-fill: white;
-    -fx-font-size: 24px;
-    -fx-font-weight: bold;
-}
-
-.label-subtitle {
-    -fx-text-fill: #00d9ff;
-    -fx-font-size: 18px;
-    -fx-font-weight: bold;
-}
-
-.label-heading {
-    -fx-text-fill: white;
-    -fx-font-size: 20px;
-    -fx-font-weight: bold;
-}
-
-.label-body {
-    -fx-text-fill: white;
-    -fx-font-size: 14px;
-}
-
-.label-caption {
-    -fx-text-fill: #888;
-    -fx-font-size: 12px;
-}
-
-.label-highlight {
-    -fx-text-fill: #00ff88;
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-}
-
-/* Canvas Styling */
-.canvas {
-    -fx-background-color: #0a0a0a;
-    -fx-border-color: #00d9ff;
-    -fx-border-width: 2;
-    -fx-border-radius: 5;
-}
-
-/* Separator Styling */
-.separator {
-    -fx-background-color: rgba(136, 136, 136, 0.3);
-}
-
+/* Separator */
 .separator .line {
-    -fx-border-color: rgba(136, 136, 136, 0.3);
+    -fx-border-color: rgba(255, 255, 255, 0.15);
+    -fx-border-width: 1;
 }
 
-/* Alert Dialog Styling */
+/* Canvas */
+.canvas {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 15, 0, 0, 5);
+}
+
+/* Alert Dialogs */
 .alert {
     -fx-background-color: #1a1a2e;
 }
 
 .alert .header-panel {
-    -fx-background-color: #0f3460;
+    -fx-background-color: linear-gradient(to right, #0f3460, #16213e);
+}
+
+.alert .header-panel .label {
+    -fx-text-fill: white;
 }
 
 .alert .content {
@@ -283,38 +187,213 @@
     -fx-text-fill: white;
 }
 
-.alert .button {
+.alert .button-bar .button {
     -fx-background-color: #00d9ff;
     -fx-text-fill: #1a1a2e;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5;
 }
 
-/* Lesson Category Label */
-.lesson-category {
+/* ScrollPane */
+.scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+/* Hover Effects for VBox/HBox Cards */
+.card-hover {
+    -fx-cursor: hand;
+}
+
+.card-hover:hover {
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+    -fx-effect: dropshadow(gaussian, rgba(0, 217, 255, 0.4), 20, 0, 0, 5);
+}
+
+/* Label Glow Effects */
+.label-glow-cyan {
+    -fx-effect: dropshadow(gaussian, #00d9ff, 15, 0.5, 0, 0);
+}
+
+.label-glow-green {
+    -fx-effect: dropshadow(gaussian, #00ff88, 15, 0.5, 0, 0);
+}
+
+.label-glow-red {
+    -fx-effect: dropshadow(gaussian, #e94560, 15, 0.5, 0, 0);
+}
+
+/* Focus Effects */
+.button:focused,
+.text-field:focused,
+.slider:focused,
+.list-view:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+/* Custom Progress Indicators */
+.progress-indicator {
+    -fx-progress-color: #00d9ff;
+}
+
+.progress-indicator .indicator {
+    -fx-background-color: transparent;
+}
+
+/* Tooltip Styling */
+.tooltip {
+    -fx-background-color: #1a1a2e;
     -fx-text-fill: white;
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-padding: 10 0;
+    -fx-font-size: 12px;
+    -fx-background-radius: 5;
+    -fx-border-color: #00d9ff;
+    -fx-border-width: 1;
+    -fx-border-radius: 5;
+    -fx-padding: 8 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 10, 0, 0, 3);
+}
+
+/* Context Menu */
+.context-menu {
+    -fx-background-color: #1a1a2e;
+    -fx-border-color: #00d9ff;
+    -fx-border-width: 1;
+    -fx-background-radius: 5;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.6), 15, 0, 0, 5);
+}
+
+.context-menu .menu-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-padding: 8 15;
+}
+
+.context-menu .menu-item:hover {
+    -fx-background-color: rgba(0, 217, 255, 0.2);
+}
+
+/* CheckBox */
+.check-box {
+    -fx-text-fill: white;
+}
+
+.check-box .box {
+    -fx-background-color: rgba(0, 0, 0, 0.3);
+    -fx-border-color: #00d9ff;
+    -fx-border-width: 2;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: #00ff88;
+}
+
+.check-box:hover .box {
+    -fx-border-color: #00ff88;
+}
+
+/* Radio Button */
+.radio-button {
+    -fx-text-fill: white;
+}
+
+.radio-button .radio {
+    -fx-background-color: rgba(0, 0, 0, 0.3);
+    -fx-border-color: #00d9ff;
+    -fx-border-width: 2;
+}
+
+.radio-button:selected .dot {
+    -fx-background-color: #00ff88;
+}
+
+/* ComboBox */
+.combo-box {
+    -fx-background-color: rgba(0, 0, 0, 0.3);
+    -fx-border-color: #00d9ff;
+    -fx-border-width: 2;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.combo-box .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+}
+
+.combo-box:hover {
+    -fx-border-color: #00ff88;
+}
+
+/* Tab Pane */
+.tab-pane {
+    -fx-tab-min-width: 120;
+    -fx-background-color: transparent;
+}
+
+.tab-pane .tab-header-area {
+    -fx-background-color: rgba(15, 52, 96, 0.3);
+}
+
+.tab-pane .tab {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8 8 0 0;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: rgba(0, 217, 255, 0.2);
+}
+
+.tab-pane .tab-label {
+    -fx-text-fill: white;
+}
+
+/* Spinner */
+.spinner {
+    -fx-background-color: rgba(0, 0, 0, 0.3);
+    -fx-border-color: #00d9ff;
+    -fx-border-width: 2;
+    -fx-border-radius: 5;
+}
+
+.spinner .text-field {
+    -fx-text-fill: white;
+    -fx-background-color: transparent;
+}
+
+/* DatePicker */
+.date-picker {
+    -fx-background-color: rgba(0, 0, 0, 0.3);
+    -fx-border-color: #00d9ff;
+    -fx-border-width: 2;
+    -fx-border-radius: 8;
+}
+
+.date-picker .text-field {
+    -fx-text-fill: white;
 }
 
 /* Animation Classes */
+@keyframes fadeIn {
+    from { -fx-opacity: 0; }
+    to { -fx-opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { -fx-translate-y: 20; -fx-opacity: 0; }
+    to { -fx-translate-y: 0; -fx-opacity: 1; }
+}
+
 .fade-in {
-    -fx-opacity: 0;
-    -fx-transition: opacity 0.3s ease-in;
+    -fx-animation: fadeIn 0.3s ease-in;
 }
 
-.fade-in:hover {
-    -fx-opacity: 1;
-}
-
-/* Glow Effect for Active Elements */
-.glow-green {
-    -fx-effect: dropshadow(gaussian, #00ff88, 20, 0.7, 0, 0);
-}
-
-.glow-cyan {
-    -fx-effect: dropshadow(gaussian, #00d9ff, 20, 0.7, 0, 0);
-}
-
-.glow-red {
-    -fx-effect: dropshadow(gaussian, #e94560, 20, 0.7, 0, 0);
+.slide-up {
+    -fx-animation: slideUp 0.4s ease-out;
 }

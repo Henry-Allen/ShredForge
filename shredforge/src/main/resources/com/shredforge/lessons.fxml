@@ -2,56 +2,126 @@
 
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.text.*?>
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" 
             fx:controller="com.shredforge.LessonsController"
-            style="-fx-background-color: linear-gradient(to bottom, #1a1a2e, #16213e);">
+            style="-fx-background-color: linear-gradient(to bottom, #0a0a0a, #1a1a2e);">
     
-    <!-- Top Bar -->
     <top>
-        <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-background-color: #0f3460; -fx-padding: 15;">
-            <Label text="📚 Guitar Lessons" style="-fx-text-fill: #e94560; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+        <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-background-color: linear-gradient(to right, #0f3460, #16213e); -fx-padding: 20;">
+            <Label text="📚 Lesson Library" style="-fx-text-fill: #00d9ff; -fx-font-size: 28px; -fx-font-weight: bold;"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button fx:id="backButton" text="← Back" onAction="#handleBack"
-                    style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 10 20; -fx-background-radius: 5;"/>
+            <TextField promptText="🔍 Search lessons..." 
+                      style="-fx-background-color: rgba(255,255,255,0.1); -fx-text-fill: white; -fx-prompt-text-fill: #888; -fx-padding: 10 15; -fx-background-radius: 8; -fx-border-color: transparent;"
+                      prefWidth="250"/>
+            <Button fx:id="backButton" text="✕ Exit" onAction="#handleBack"
+                    style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 12 25; -fx-background-radius: 8; -fx-font-weight: bold;"/>
         </HBox>
     </top>
     
-    <!-- Main Content -->
     <center>
-        <HBox spacing="0" VBox.vgrow="ALWAYS">
+        <HBox spacing="0">
             
-            <!-- Left: Categories -->
-            <VBox spacing="0" style="-fx-background-color: #0f3460; -fx-padding: 0;" prefWidth="300">
-                <Label text="Categories" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold; -fx-padding: 20;"/>
+            <!-- Left Sidebar: Categories -->
+            <VBox spacing="0" style="-fx-background-color: #0f3460; -fx-padding: 0;" prefWidth="280">
+                <VBox spacing="10" style="-fx-padding: 25;">
+                    <Label text="Categories" style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+                    <Label text="Choose your skill level" style="-fx-text-fill: #888; -fx-font-size: 13px;"/>
+                </VBox>
                 <ListView fx:id="categoryList" VBox.vgrow="ALWAYS"
-                         style="-fx-background-color: #0f3460; -fx-control-inner-background: #0f3460;"/>
+                         style="-fx-background-color: #0f3460; -fx-control-inner-background: #0f3460; -fx-border-color: transparent; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;"/>
             </VBox>
             
             <!-- Middle: Lessons List -->
-            <VBox spacing="0" style="-fx-background-color: #16213e; -fx-padding: 0;" prefWidth="350" HBox.hgrow="ALWAYS">
-                <VBox style="-fx-padding: 20; -fx-background-color: #16213e;">
-                    <Label fx:id="categoryLabel" text="Select a category" 
-                           style="-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;"/>
-                    <ProgressBar fx:id="categoryProgress" progress="0" prefWidth="300" prefHeight="15"
-                                style="-fx-accent: #00ff88;"/>
+            <VBox spacing="0" style="-fx-background-color: #16213e;" prefWidth="380" HBox.hgrow="ALWAYS">
+                <VBox spacing="10" style="-fx-padding: 25; -fx-background-color: rgba(0, 217, 255, 0.1);">
+                    <HBox alignment="CENTER_LEFT" spacing="15">
+                        <VBox spacing="5" HBox.hgrow="ALWAYS">
+                            <Label fx:id="categoryLabel" text="Select a category" 
+                                   style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;"/>
+                            <Label text="Track your progress" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+                        </VBox>
+                        <VBox alignment="CENTER" spacing="5" style="-fx-background-color: rgba(0, 255, 136, 0.2); -fx-padding: 10 15; -fx-background-radius: 8;">
+                            <Label text="0/6" style="-fx-text-fill: #00ff88; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+                            <Label text="Complete" style="-fx-text-fill: #888; -fx-font-size: 11px;"/>
+                        </VBox>
+                    </HBox>
+                    <ProgressBar fx:id="categoryProgress" progress="0" prefHeight="6"
+                                style="-fx-accent: linear-gradient(to right, #00ff88, #00d9ff); -fx-background-radius: 5;"/>
                 </VBox>
                 <ListView fx:id="lessonList" VBox.vgrow="ALWAYS"
-                         style="-fx-background-color: #16213e; -fx-control-inner-background: #16213e;"/>
+                         style="-fx-background-color: #16213e; -fx-control-inner-background: #16213e; -fx-border-color: transparent; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-padding: 10;"/>
             </VBox>
             
             <!-- Right: Lesson Preview -->
-            <VBox spacing="20" style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 20;" prefWidth="450" HBox.hgrow="ALWAYS">
-                <Label text="Lesson Preview" style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+            <VBox spacing="25" style="-fx-background-color: rgba(15, 52, 96, 0.2); -fx-padding: 30;" prefWidth="500" HBox.hgrow="ALWAYS">
                 
-                <TextArea fx:id="lessonPreview" editable="false" wrapText="true" VBox.vgrow="ALWAYS"
-                         style="-fx-control-inner-background: #1a1a2e; -fx-text-fill: white; -fx-font-size: 14px; -fx-background-color: #1a1a2e;"/>
+                <!-- Preview Header -->
+                <VBox spacing="15" style="-fx-background-color: linear-gradient(to bottom right, rgba(0, 217, 255, 0.2), rgba(233, 69, 96, 0.2)); -fx-padding: 25; -fx-background-radius: 12;">
+                    <Label text="Lesson Preview" style="-fx-text-fill: white; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                    <HBox spacing="15">
+                        <VBox spacing="5" style="-fx-background-color: rgba(0, 0, 0, 0.3); -fx-padding: 12 18; -fx-background-radius: 8;">
+                            <Label text="⏱️ Duration" style="-fx-text-fill: #888; -fx-font-size: 11px;"/>
+                            <Label text="15 min" style="-fx-text-fill: #00d9ff; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                        </VBox>
+                        <VBox spacing="5" style="-fx-background-color: rgba(0, 0, 0, 0.3); -fx-padding: 12 18; -fx-background-radius: 8;">
+                            <Label text="📊 Level" style="-fx-text-fill: #888; -fx-font-size: 11px;"/>
+                            <Label text="Beginner" style="-fx-text-fill: #00ff88; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                        </VBox>
+                        <VBox spacing="5" style="-fx-background-color: rgba(0, 0, 0, 0.3); -fx-padding: 12 18; -fx-background-radius: 8;">
+                            <Label text="⭐ Rating" style="-fx-text-fill: #888; -fx-font-size: 11px;"/>
+                            <Label text="4.8/5" style="-fx-text-fill: #ffaa00; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                        </VBox>
+                    </HBox>
+                </VBox>
                 
+                <!-- Lesson Content -->
+                <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" style="-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;">
+                    <VBox spacing="20" style="-fx-padding: 10;">
+                        
+                        <!-- What You'll Learn -->
+                        <VBox spacing="12" style="-fx-background-color: rgba(0, 0, 0, 0.3); -fx-padding: 20; -fx-background-radius: 10;">
+                            <Label text="🎯 What You'll Learn" style="-fx-text-fill: #00d9ff; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                            <Separator style="-fx-background-color: rgba(255,255,255,0.1);"/>
+                            <TextArea fx:id="lessonPreview" editable="false" wrapText="true" prefHeight="200"
+                                     style="-fx-control-inner-background: transparent; -fx-text-fill: #ddd; -fx-font-size: 14px; -fx-background-color: transparent; -fx-border-color: transparent; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;"/>
+                        </VBox>
+                        
+                        <!-- Prerequisites -->
+                        <VBox spacing="12" style="-fx-background-color: rgba(255, 170, 0, 0.1); -fx-padding: 20; -fx-background-radius: 10;">
+                            <Label text="📋 Prerequisites" style="-fx-text-fill: #ffaa00; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                            <Separator style="-fx-background-color: rgba(255,255,255,0.1);"/>
+                            <Label text="• Basic understanding of guitar parts" style="-fx-text-fill: white; -fx-font-size: 13px;"/>
+                            <Label text="• Ability to hold the guitar correctly" style="-fx-text-fill: white; -fx-font-size: 13px;"/>
+                            <Label text="• Tuned guitar ready" style="-fx-text-fill: white; -fx-font-size: 13px;"/>
+                        </VBox>
+                        
+                        <!-- Learning Path -->
+                        <VBox spacing="12" style="-fx-background-color: rgba(0, 255, 136, 0.1); -fx-padding: 20; -fx-background-radius: 10;">
+                            <Label text="🗺️ Learning Path" style="-fx-text-fill: #00ff88; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                            <Separator style="-fx-background-color: rgba(255,255,255,0.1);"/>
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <Label text="1" style="-fx-background-color: #00ff88; -fx-text-fill: #1a1a2e; -fx-font-weight: bold; -fx-padding: 5 10; -fx-background-radius: 15;"/>
+                                <Label text="Watch video tutorial" style="-fx-text-fill: white; -fx-font-size: 13px;"/>
+                            </HBox>
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <Label text="2" style="-fx-background-color: #00d9ff; -fx-text-fill: #1a1a2e; -fx-font-weight: bold; -fx-padding: 5 10; -fx-background-radius: 15;"/>
+                                <Label text="Follow guided practice" style="-fx-text-fill: white; -fx-font-size: 13px;"/>
+                            </HBox>
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <Label text="3" style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 5 10; -fx-background-radius: 15;"/>
+                                <Label text="Complete challenge" style="-fx-text-fill: white; -fx-font-size: 13px;"/>
+                            </HBox>
+                        </VBox>
+                        
+                    </VBox>
+                </ScrollPane>
+                
+                <!-- Action Button -->
                 <Button fx:id="startLessonButton" text="▶ Start Lesson" onAction="#handleStartLesson"
-                        style="-fx-background-color: #00ff88; -fx-text-fill: #1a1a2e; -fx-font-size: 18px; -fx-padding: 15 30; -fx-background-radius: 10; -fx-font-weight: bold;"
-                        prefWidth="300"/>
+                        style="-fx-background-color: linear-gradient(to right, #00ff88, #00d9ff); -fx-text-fill: #1a1a2e; -fx-font-size: 18px; -fx-padding: 18 40; -fx-background-radius: 12; -fx-font-weight: bold;"
+                        prefWidth="400"/>
+                
             </VBox>
             
         </HBox>

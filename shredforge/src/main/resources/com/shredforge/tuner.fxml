@@ -2,84 +2,127 @@
 
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.text.*?>
-<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.canvas.*?>
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" 
             fx:controller="com.shredforge.TunerController"
-            style="-fx-background-color: linear-gradient(to bottom, #1a1a2e, #16213e);">
+            style="-fx-background-color: linear-gradient(to bottom, #0a0a0a, #1a1a2e);">
     
-    <!-- Top Bar -->
     <top>
-        <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-background-color: #0f3460; -fx-padding: 15;">
-            <Label text="🎚️ Guitar Tuner" style="-fx-text-fill: #e94560; -fx-font-size: 24px; -fx-font-weight: bold;"/>
-            <Region HBox.hgrow="ALWAYS"/>
-            <Label fx:id="statusLabel" text="Ready" style="-fx-text-fill: #00d9ff; -fx-font-size: 14px; -fx-font-weight: bold;"/>
-            <Button fx:id="backButton" text="← Back" onAction="#handleBack"
-                    style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 10 20; -fx-background-radius: 5;"/>
-        </HBox>
+        <VBox spacing="0">
+            <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-background-color: linear-gradient(to right, #0f3460, #16213e); -fx-padding: 20;">
+                <Label text="🎚️ Guitar Tuner" style="-fx-text-fill: #e94560; -fx-font-size: 28px; -fx-font-weight: bold;"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <VBox alignment="CENTER" spacing="5" style="-fx-background-color: rgba(0, 217, 255, 0.2); -fx-padding: 10 20; -fx-background-radius: 10;">
+                    <Label text="Status" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+                    <Label fx:id="statusLabel" text="Ready" style="-fx-text-fill: #00d9ff; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                </VBox>
+                <Button fx:id="backButton" text="✕ Exit" onAction="#handleBack"
+                        style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 12 25; -fx-background-radius: 8; -fx-font-weight: bold;"/>
+            </HBox>
+            
+            <!-- Quick String Reference -->
+            <HBox alignment="CENTER" spacing="15" style="-fx-background-color: rgba(0, 0, 0, 0.3); -fx-padding: 15;">
+                <Label text="Standard Tuning:" style="-fx-text-fill: #888; -fx-font-size: 13px;"/>
+                <Label text="E" style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-padding: 5 12; -fx-background-radius: 5; -fx-font-weight: bold;"/>
+                <Label text="A" style="-fx-background-color: #ffaa00; -fx-text-fill: white; -fx-padding: 5 12; -fx-background-radius: 5; -fx-font-weight: bold;"/>
+                <Label text="D" style="-fx-background-color: #00ff88; -fx-text-fill: #1a1a2e; -fx-padding: 5 12; -fx-background-radius: 5; -fx-font-weight: bold;"/>
+                <Label text="G" style="-fx-background-color: #00d9ff; -fx-text-fill: #1a1a2e; -fx-padding: 5 12; -fx-background-radius: 5; -fx-font-weight: bold;"/>
+                <Label text="B" style="-fx-background-color: #a855f7; -fx-text-fill: white; -fx-padding: 5 12; -fx-background-radius: 5; -fx-font-weight: bold;"/>
+                <Label text="E" style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-padding: 5 12; -fx-background-radius: 5; -fx-font-weight: bold;"/>
+            </HBox>
+        </VBox>
     </top>
     
-    <!-- Main Content -->
     <center>
         <VBox spacing="30" alignment="CENTER" style="-fx-padding: 40;">
             
-            <!-- Detected Note Display -->
-            <VBox spacing="10" alignment="CENTER" style="-fx-background-color: rgba(15, 52, 96, 0.5); -fx-padding: 40; -fx-background-radius: 15;">
-                <Label text="Detected Note" style="-fx-text-fill: #888; -fx-font-size: 16px;"/>
-                <Label fx:id="noteLabel" text="--" 
-                       style="-fx-text-fill: #00ff88; -fx-font-size: 72px; -fx-font-weight: bold;"/>
-                <Label fx:id="frequencyLabel" text="0.0 Hz" 
-                       style="-fx-text-fill: #00d9ff; -fx-font-size: 18px;"/>
+            <!-- Main Detection Display -->
+            <VBox spacing="20" alignment="CENTER" style="-fx-background-color: linear-gradient(to bottom, rgba(0, 217, 255, 0.15), rgba(233, 69, 96, 0.15)); -fx-padding: 50; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(0, 217, 255, 0.3), 20, 0, 0, 0);" prefWidth="600">
+                <Label text="Detected Note" style="-fx-text-fill: #888; -fx-font-size: 14px; -fx-letter-spacing: 2; -fx-font-weight: bold;"/>
+                <VBox alignment="CENTER" spacing="10">
+                    <Label fx:id="noteLabel" text="--" 
+                           style="-fx-text-fill: #00ff88; -fx-font-size: 96px; -fx-font-weight: bold; -fx-font-family: 'Courier New';"/>
+                    <Label fx:id="frequencyLabel" text="0.0 Hz" 
+                           style="-fx-text-fill: #00d9ff; -fx-font-size: 24px; -fx-font-family: 'Courier New';"/>
+                </VBox>
             </VBox>
             
             <!-- Tuning Meter -->
-            <VBox spacing="15" alignment="CENTER" style="-fx-background-color: rgba(15, 52, 96, 0.5); -fx-padding: 30; -fx-background-radius: 15;" prefWidth="600">
-                <Label text="Tuning Accuracy" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;"/>
-                
-                <Canvas fx:id="meterCanvas" width="500" height="100"/>
-                
-                <HBox spacing="40" alignment="CENTER">
-                    <VBox alignment="CENTER" spacing="5">
-                        <Label text="Too Flat" style="-fx-text-fill: #ff6b6b; -fx-font-size: 12px;"/>
-                        <Label text="♭" style="-fx-text-fill: #ff6b6b; -fx-font-size: 24px; -fx-font-weight: bold;"/>
-                    </VBox>
-                    <VBox alignment="CENTER" spacing="5">
-                        <Label text="In Tune" style="-fx-text-fill: #00ff88; -fx-font-size: 12px;"/>
-                        <Label text="✓" style="-fx-text-fill: #00ff88; -fx-font-size: 24px; -fx-font-weight: bold;"/>
-                    </VBox>
-                    <VBox alignment="CENTER" spacing="5">
-                        <Label text="Too Sharp" style="-fx-text-fill: #ff6b6b; -fx-font-size: 12px;"/>
-                        <Label text="♯" style="-fx-text-fill: #ff6b6b; -fx-font-size: 24px; -fx-font-weight: bold;"/>
-                    </VBox>
+            <VBox spacing="20" alignment="CENTER" style="-fx-background-color: rgba(0, 0, 0, 0.4); -fx-padding: 40; -fx-background-radius: 20;" prefWidth="700">
+                <HBox alignment="CENTER" spacing="15">
+                    <Label text="Tuning Accuracy" style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+                    <Label fx:id="centsLabel" text="0¢" 
+                           style="-fx-text-fill: white; -fx-font-size: 28px; -fx-font-weight: bold; -fx-font-family: 'Courier New'; -fx-background-color: rgba(0, 217, 255, 0.2); -fx-padding: 5 15; -fx-background-radius: 8;"/>
                 </HBox>
                 
-                <Label fx:id="centsLabel" text="0¢" 
-                       style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+                <Canvas fx:id="meterCanvas" width="600" height="120"/>
+                
+                <!-- Accuracy Indicators -->
+                <HBox spacing="60" alignment="CENTER">
+                    <VBox alignment="CENTER" spacing="8">
+                        <Label text="♭" style="-fx-text-fill: #ff6b6b; -fx-font-size: 32px; -fx-font-weight: bold;"/>
+                        <Label text="Too Flat" style="-fx-text-fill: #ff6b6b; -fx-font-size: 13px; -fx-font-weight: bold;"/>
+                    </VBox>
+                    <VBox alignment="CENTER" spacing="8">
+                        <Label text="✓" style="-fx-text-fill: #00ff88; -fx-font-size: 32px; -fx-font-weight: bold;"/>
+                        <Label text="Perfect!" style="-fx-text-fill: #00ff88; -fx-font-size: 13px; -fx-font-weight: bold;"/>
+                    </VBox>
+                    <VBox alignment="CENTER" spacing="8">
+                        <Label text="♯" style="-fx-text-fill: #ff6b6b; -fx-font-size: 32px; -fx-font-weight: bold;"/>
+                        <Label text="Too Sharp" style="-fx-text-fill: #ff6b6b; -fx-font-size: 13px; -fx-font-weight: bold;"/>
+                    </VBox>
+                </HBox>
             </VBox>
             
-            <!-- String Reference -->
-            <VBox spacing="15" style="-fx-background-color: rgba(15, 52, 96, 0.5); -fx-padding: 20; -fx-background-radius: 15;" prefWidth="600">
-                <Label text="Standard Tuning Reference" style="-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;"/>
-                <GridPane hgap="10" vgap="10" alignment="CENTER">
-                    <Label text="E (82.4 Hz)" style="-fx-text-fill: #00d9ff; -fx-font-size: 14px;" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-                    <Label text="A (110.0 Hz)" style="-fx-text-fill: #00d9ff; -fx-font-size: 14px;" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-                    <Label text="D (146.8 Hz)" style="-fx-text-fill: #00d9ff; -fx-font-size: 14px;" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
-                    <Label text="G (196.0 Hz)" style="-fx-text-fill: #00d9ff; -fx-font-size: 14px;" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-                    <Label text="B (246.9 Hz)" style="-fx-text-fill: #00d9ff; -fx-font-size: 14px;" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-                    <Label text="E (329.6 Hz)" style="-fx-text-fill: #00d9ff; -fx-font-size: 14px;" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+            <!-- String Reference Chart -->
+            <VBox spacing="15" style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 30; -fx-background-radius: 15;" prefWidth="700">
+                <Label text="📊 Reference Frequencies" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;"/>
+                <Separator style="-fx-background-color: rgba(255,255,255,0.1);"/>
+                <GridPane hgap="30" vgap="15">
+                    <!-- Row 1 -->
+                    <VBox spacing="8" style="-fx-background-color: rgba(233, 69, 96, 0.2); -fx-padding: 15; -fx-background-radius: 8;" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <Label text="String 6" style="-fx-text-fill: #888; -fx-font-size: 11px;"/>
+                        <Label text="E" style="-fx-text-fill: #e94560; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                        <Label text="82.4 Hz" style="-fx-text-fill: white; -fx-font-size: 13px;"/>
+                    </VBox>
+                    <VBox spacing="8" style="-fx-background-color: rgba(255, 170, 0, 0.2); -fx-padding: 15; -fx-background-radius: 8;" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <Label text="String 5" style="-fx-text-fill: #888; -fx-font-size: 11px;"/>
+                        <Label text="A" style="-fx-text-fill: #ffaa00; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                        <Label text="110.0 Hz" style="-fx-text-fill: white; -fx-font-size: 13px;"/>
+                    </VBox>
+                    <VBox spacing="8" style="-fx-background-color: rgba(0, 255, 136, 0.2); -fx-padding: 15; -fx-background-radius: 8;" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                        <Label text="String 4" style="-fx-text-fill: #888; -fx-font-size: 11px;"/>
+                        <Label text="D" style="-fx-text-fill: #00ff88; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                        <Label text="146.8 Hz" style="-fx-text-fill: white; -fx-font-size: 13px;"/>
+                    </VBox>
+                    <!-- Row 2 -->
+                    <VBox spacing="8" style="-fx-background-color: rgba(0, 217, 255, 0.2); -fx-padding: 15; -fx-background-radius: 8;" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                        <Label text="String 3" style="-fx-text-fill: #888; -fx-font-size: 11px;"/>
+                        <Label text="G" style="-fx-text-fill: #00d9ff; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                        <Label text="196.0 Hz" style="-fx-text-fill: white; -fx-font-size: 13px;"/>
+                    </VBox>
+                    <VBox spacing="8" style="-fx-background-color: rgba(168, 85, 247, 0.2); -fx-padding: 15; -fx-background-radius: 8;" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                        <Label text="String 2" style="-fx-text-fill: #888; -fx-font-size: 11px;"/>
+                        <Label text="B" style="-fx-text-fill: #a855f7; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                        <Label text="246.9 Hz" style="-fx-text-fill: white; -fx-font-size: 13px;"/>
+                    </VBox>
+                    <VBox spacing="8" style="-fx-background-color: rgba(233, 69, 96, 0.2); -fx-padding: 15; -fx-background-radius: 8;" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                        <Label text="String 1" style="-fx-text-fill: #888; -fx-font-size: 11px;"/>
+                        <Label text="E" style="-fx-text-fill: #e94560; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                        <Label text="329.6 Hz" style="-fx-text-fill: white; -fx-font-size: 13px;"/>
+                    </VBox>
                 </GridPane>
             </VBox>
             
             <!-- Control Buttons -->
             <HBox spacing="20" alignment="CENTER">
                 <Button fx:id="startButton" text="▶ Start Tuning" onAction="#handleStart"
-                        style="-fx-background-color: #00ff88; -fx-text-fill: #1a1a2e; -fx-font-size: 16px; -fx-padding: 15 30; -fx-background-radius: 10; -fx-font-weight: bold;"
-                        prefWidth="180"/>
+                        style="-fx-background-color: linear-gradient(to right, #00ff88, #00d9ff); -fx-text-fill: #1a1a2e; -fx-font-size: 18px; -fx-padding: 18 40; -fx-background-radius: 12; -fx-font-weight: bold;"
+                        prefWidth="220"/>
                 <Button fx:id="stopButton" text="⏹ Stop" onAction="#handleStop" disable="true"
-                        style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-font-size: 16px; -fx-padding: 15 30; -fx-background-radius: 10; -fx-font-weight: bold;"
-                        prefWidth="180"/>
+                        style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-font-size: 18px; -fx-padding: 18 40; -fx-background-radius: 12; -fx-font-weight: bold;"
+                        prefWidth="220"/>
             </HBox>
             
         </VBox>
