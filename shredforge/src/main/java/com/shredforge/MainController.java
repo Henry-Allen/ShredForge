@@ -1,38 +1,31 @@
 package com.shredforge;
 
 import javafx.animation.*;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.chart.*;
+import javafx.scene.paint.Color;
 import javafx.util.Duration;
-import java.time.LocalDateTime;
+
+import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
-/**
- * MainController - Enhanced Dashboard with Real-time Statistics
- * 
- * Features:
- * - Real-time clock with date display
- * - Practice statistics tracking (streak, time, accuracy)
- * - Recent session history with details
- * - Quick access navigation to all features
- * - Animated UI elements and smooth transitions
- * - Progress tracking and goal visualization
- * 
- * @version 1.1
- * @author Team 2 - ShredForge
- */
 public class MainController {
 
     private static final Logger LOGGER = Logger.getLogger(MainController.class.getName());
 
-    // FXML Components
     @FXML private BorderPane mainContainer;
     @FXML private Label welcomeLabel;
     @FXML private Label currentTimeLabel;
@@ -45,39 +38,68 @@ public class MainController {
     @FXML private Button lessonsButton;
     @FXML private Button statsButton;
 
-    // Data
     private ObservableList<String> recentSessions;
     private Timeline clockTimeline;
-    private List<SessionData> sessionHistory;
+    private Timeline statsUpdateTimeline;
+    private final List<SessionData> sessionHistory = Collections.synchronizedList(new ArrayList<>());
+    private final List<Achievement> achievements = new ArrayList<>();
     
-    // Statistics
-    private int currentStreak = 7;
-    private double totalPracticeHours = 12.5;
-    private int averageAccuracy = 87;
-    private int lessonsCompleted = 5;
-    private int totalLessons = 36;
-    private double overallProgress = 0.35;
+    private volatile int currentStreak = 7;
+    private volatile double totalPracticeHours = 12.5;
+    private volatile int averageAccuracy = 87;
+    private volatile int lessonsCompleted = 5;
+    private volatile int totalLessons = 36;
+    private volatile double overallProgress = 0.35;
+    private volatile int totalSessions = 0;
+    private volatile int longestStreak = 10;
+    private volatile double weeklyGoalHours = 5.0;
+    private volatile int perfectSessions = 0;
     
-    // Constants
+    private final Map<String, Integer> skillLevels = new HashMap<>();
+    private final Map<DayOfWeek, Integer> practiceByDay = new EnumMap<>(DayOfWeek.class);
+    private final Map<LocalDate, SessionData> sessionsByDate = new TreeMap<>();
+    private final AtomicInteger totalNotesPlayed = new AtomicInteger(0);
+    
+    private static final int[] MILESTONE_HOURS = {5, 10, 25, 50, 100, 250, 500, 1000};
+    private static final int[] MILESTONE_SESSIONS = {10, 25, 50, 100, 250, 500};
+    
     private static final int MAX_RECENT_SESSIONS = 10;
     private static final String[] LESSON_CATEGORIES = {
         "🎼 Beginner Fundamentals",
         "🎸 Intermediate Techniques", 
         "⚡ Advanced Shredding",
-        "🎵 Music Theory"
+        "🎵 Music Theory",
+        "🎶 Songs & Repertoire",
+        "🤘 Speed Techniques"
+    };
+    
+    private static final String[] SKILL_CATEGORIES = {
+        "Rhythm", "Lead", "Chords", "Scales", "Technique", "Theory"
     };
 
     @FXML
     public void initialize() {
         LOGGER.info("Initializing MainController");
         try {
+            initializeSkillLevels();
             initializeSessionHistory();
+            initializeAchievements();
             setupDashboard();
             loadRecentSessions();
             updateTime();
-            loadLessons();
+            
+            // Check if lessonsContainer exists before trying to load lessons
+            if (lessonsContainer != null) {
+                loadLessons();
+            } else {
+                LOGGER.warning("lessonsContainer is null, skipping lesson loading");
+            }
+            
             startClockUpdate();
+            startPeriodicStatsUpdate();
             animateWelcome();
+            checkForMilestones();
+            
             LOGGER.info("Dashboard initialized successfully");
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to initialize dashboard", e);
@@ -85,520 +107,379 @@ public class MainController {
         }
     }
 
-    /**
-     * Initializes session history with sample data
-     */
+    private void initializeSkillLevels() {
+        for (String skill : SKILL_CATEGORIES) {
+            skillLevels.put(skill, (int) (Math.random() * 100));
+        }
+        
+        for (DayOfWeek day : DayOfWeek.values()) {
+            practiceByDay.put(day, 0);
+        }
+    }
+
     private void initializeSessionHistory() {
-        sessionHistory = new ArrayList<>();
-        
-        // Add sample session data
-        sessionHistory.add(new SessionData(
-            LocalDateTime.now().minusDays(0),
-            "Power Chords Practice",
-            25,
-            4,
-            92
-        ));
-        sessionHistory.add(new SessionData(
-            LocalDateTime.now().minusDays(1),
-            "Alternate Picking",
-            30,
-            5,
-            88
-        ));
-        sessionHistory.add(new SessionData(
-            LocalDateTime.now().minusDays(2),
-            "Scale Practice - A Minor",
-            20,
-            3,
-            85
-        ));
-        sessionHistory.add(new SessionData(
-            LocalDateTime.now().minusDays(3),
-            "Chord Changes",
-            15,
-            4,
-            90
-        ));
-        sessionHistory.add(new SessionData(
-            LocalDateTime.now().minusDays(4),
-            "Finger Exercise",
-            10,
-            3,
-            78
-        ));
-    }
-
-    /**
-     * Animates the welcome screen with fade and scale effects
-     */
-    private void animateWelcome() {
-        // Fade in animation for main container
-        FadeTransition fade = new FadeTransition(Duration.millis(800), mainContainer);
-        fade.setFromValue(0.0);
-        fade.setToValue(1.0);
-        fade.play();
-        
-        // Animate progress bar fill
-        Timeline progressAnimation = new Timeline(
-            new KeyFrame(Duration.ZERO, new KeyValue(overallProgressBar.progressProperty(), 0.0)),
-            new KeyFrame(Duration.millis(1500), new KeyValue(overallProgressBar.progressProperty(), overallProgress))
-        );
-        progressAnimation.play();
-        
-        // Stagger animate buttons with delays
-        animateButton(startPracticeButton, 200);
-        animateButton(lessonsButton, 400);
-        animateButton(tunerButton, 600);
-        animateButton(statsButton, 800);
-    }
-
-    /**
-     * Animates a button with slide and fade effect
-     */
-    private void animateButton(Button button, int delayMs) {
-        TranslateTransition slide = new TranslateTransition(Duration.millis(400), button);
-        slide.setFromY(20);
-        slide.setToY(0);
-        slide.setDelay(Duration.millis(delayMs));
-        
-        FadeTransition fade = new FadeTransition(Duration.millis(400), button);
-        fade.setFromValue(0.0);
-        fade.setToValue(1.0);
-        fade.setDelay(Duration.millis(delayMs));
-        
-        ParallelTransition parallel = new ParallelTransition(slide, fade);
-        parallel.play();
-    }
-
-    /**
-     * Sets up the dashboard with welcome message and stats
-     */
-    private void setupDashboard() {
-        String userName = getUserName();
-        welcomeLabel.setText("Welcome back, " + userName + "! 🎸");
-        animateLabel(welcomeLabel);
-        
-        // Update progress label
-        int percentComplete = (int) (overallProgress * 100);
-        progressLabel.setText(percentComplete + "% Complete");
-        
-        LOGGER.info("Dashboard setup complete for user: " + userName);
-    }
-
-    /**
-     * Gets the user name (can be loaded from preferences)
-     */
-    private String getUserName() {
-        // TODO: Load from user preferences/settings
-        return "Guitarist";
-    }
-
-    /**
-     * Starts the clock update timer
-     */
-    private void startClockUpdate() {
-        clockTimeline = new Timeline(
-            new KeyFrame(Duration.seconds(1), e -> updateTime())
-        );
-        clockTimeline.setCycleCount(Timeline.INDEFINITE);
-        clockTimeline.play();
-    }
-
-    /**
-     * Updates the current time display
-     */
-    private void updateTime() {
         LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy - h:mm a");
-        currentTimeLabel.setText(formatter.format(now));
-    }
-
-    /**
-     * Loads recent practice sessions into the list view
-     */
-    private void loadRecentSessions() {
-        recentSessions = FXCollections.observableArrayList();
         
-        // Format session history for display
-        for (SessionData session : sessionHistory) {
-            String formattedSession = formatSessionForDisplay(session);
-            recentSessions.add(formattedSession);
+        String[] sessionTypes = {
+            "Power Chords Practice", "Alternate Picking", "Scale Practice - A Minor",
+            "Chord Changes", "Finger Exercise", "Sweep Picking", "Legato Runs",
+            "Arpeggios", "Rhythm Training", "Solo Practice"
+        };
+        
+        for (int i = 0; i < 14; i++) {
+            LocalDateTime sessionDate = now.minusDays(i);
+            String sessionName = sessionTypes[(int) (Math.random() * sessionTypes.length)];
+            int duration = 10 + (int) (Math.random() * 40);
+            int rating = 3 + (int) (Math.random() * 3);
+            int accuracy = 70 + (int) (Math.random() * 30);
+            int notesPlayed = duration * (10 + (int) (Math.random() * 20));
+            
+            SessionData session = new SessionData(
+                sessionDate, sessionName, duration, rating, accuracy, notesPlayed
+            );
+            
+            sessionHistory.add(session);
+            sessionsByDate.put(sessionDate.toLocalDate(), session);
+            
+            DayOfWeek day = sessionDate.getDayOfWeek();
+            practiceByDay.merge(day, 1, Integer::sum);
+            
+            totalNotesPlayed.addAndGet(notesPlayed);
         }
         
-        recentSessionsList.setItems(recentSessions);
+        sessionHistory.sort((a, b) -> b.dateTime.compareTo(a.dateTime));
         
-        // Custom cell factory for better styling
-        recentSessionsList.setCellFactory(lv -> new ListCell<String>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(item);
-                    setStyle("-fx-text-fill: white; -fx-background-color: transparent; -fx-padding: 12;");
-                    
-                    // Add hover effect
-                    setOnMouseEntered(e -> setStyle("-fx-text-fill: white; -fx-background-color: rgba(0, 217, 255, 0.15); -fx-padding: 12; -fx-cursor: hand;"));
-                    setOnMouseExited(e -> setStyle("-fx-text-fill: white; -fx-background-color: transparent; -fx-padding: 12;"));
-                }
-            }
-        });
-        
-        // Add click handler to view session details
-        recentSessionsList.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2) {
-                String selected = recentSessionsList.getSelectionModel().getSelectedItem();
-                if (selected != null) {
-                    showSessionDetails(selected);
-                }
-            }
-        });
-        
-        LOGGER.info("Loaded " + recentSessions.size() + " recent sessions");
+        totalSessions = sessionHistory.size();
+        LOGGER.info("Initialized " + sessionHistory.size() + " sessions");
     }
 
-    /**
-     * Formats a session for display in the list
-     */
-    private String formatSessionForDisplay(SessionData session) {
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMM d");
-        String date = session.dateTime.format(dateFormatter);
-        String stars = getStarRating(session.rating);
-        return String.format("📅 %s - %s (%d min) %s", 
-            date, session.name, session.durationMinutes, stars);
+    private void initializeAchievements() {
+        achievements.add(new Achievement("First Steps", "Complete your first practice session", false));
+        achievements.add(new Achievement("Week Warrior", "Maintain a 7-day streak", currentStreak >= 7));
+        achievements.add(new Achievement("Dedicated", "Practice 10 hours total", totalPracticeHours >= 10));
+        achievements.add(new Achievement("Century Club", "Complete 100 sessions", totalSessions >= 100));
+        achievements.add(new Achievement("Perfect Practice", "Get 95%+ accuracy in 10 sessions", perfectSessions >= 10));
     }
 
-    /**
-     * Gets star rating string based on numeric rating
-     */
-    private String getStarRating(int rating) {
-        StringBuilder stars = new StringBuilder();
-        for (int i = 0; i < rating; i++) {
-            stars.append("⭐");
+    private void checkForMilestones() {
+        for (int milestone : MILESTONE_HOURS) {
+            if (totalPracticeHours >= milestone && totalPracticeHours < milestone + 1) {
+                LOGGER.info("Milestone reached: " + milestone + " hours");
+                break;
+            }
         }
-        return stars.toString();
-    }
-
-    /**
-     * Shows detailed information about a session
-     */
-    private void showSessionDetails(String sessionText) {
-        // Find the corresponding session data
-        for (SessionData session : sessionHistory) {
-            if (sessionText.contains(session.name)) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Session Details");
-                alert.setHeaderText(session.name);
-                
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy 'at' h:mm a");
-                alert.setContentText(
-                    "📅 Date: " + session.dateTime.format(formatter) + "\n" +
-                    "⏱️ Duration: " + session.durationMinutes + " minutes\n" +
-                    "⭐ Rating: " + session.rating + "/5\n" +
-                    "🎯 Accuracy: " + session.accuracy + "%\n\n" +
-                    "Keep up the great work!"
-                );
-                alert.showAndWait();
+        
+        for (int milestone : MILESTONE_SESSIONS) {
+            if (totalSessions >= milestone && totalSessions < milestone + 10) {
+                LOGGER.info("Milestone reached: " + milestone + " sessions");
                 break;
             }
         }
     }
 
-    /**
-     * Loads lesson categories with animation
-     */
+    private void setupDashboard() {
+        if (progressLabel != null) {
+            progressLabel.setText(String.format("%d%% Complete - %d/%d Lessons", 
+                (int)(overallProgress * 100), lessonsCompleted, totalLessons));
+        }
+        
+        if (overallProgressBar != null) {
+            overallProgressBar.setProgress(overallProgress);
+        }
+    }
+
+    private void loadRecentSessions() {
+        recentSessions = FXCollections.observableArrayList();
+        
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd, HH:mm");
+        
+        for (int i = 0; i < Math.min(MAX_RECENT_SESSIONS, sessionHistory.size()); i++) {
+            SessionData session = sessionHistory.get(i);
+            String formattedDate = session.dateTime.format(formatter);
+            String stars = "⭐".repeat(session.rating);
+            recentSessions.add(String.format("%s - %s %s (%d min, %d%%)", 
+                formattedDate, session.name, stars, session.durationMinutes, session.accuracy));
+        }
+        
+        if (recentSessionsList != null) {
+            recentSessionsList.setItems(recentSessions);
+        }
+    }
+
+    private void updateTime() {
+        if (currentTimeLabel != null) {
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, MMM dd • hh:mm a");
+            currentTimeLabel.setText(now.format(formatter));
+        }
+    }
+
     private void loadLessons() {
+        if (lessonsContainer == null) {
+            LOGGER.warning("lessonsContainer is null, cannot load lessons");
+            return;
+        }
+        
+        lessonsContainer.getChildren().clear();
+        
         for (int i = 0; i < LESSON_CATEGORIES.length; i++) {
             String category = LESSON_CATEGORIES[i];
-            Label categoryLabel = new Label(category);
-            categoryLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 10 0;");
-            categoryLabel.setOpacity(0);
+            HBox categoryBox = createCategoryBox(category, i);
             
-            // Make clickable
-            categoryLabel.setOnMouseEntered(e -> categoryLabel.setStyle("-fx-text-fill: #00d9ff; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 10 0; -fx-cursor: hand;"));
-            categoryLabel.setOnMouseExited(e -> categoryLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 10 0;"));
-            categoryLabel.setOnMouseClicked(e -> handleOpenLessons());
+            lessonsContainer.getChildren().add(categoryBox);
             
-            lessonsContainer.getChildren().add(categoryLabel);
-            
-            // Stagger fade in animation
-            FadeTransition fade = new FadeTransition(Duration.millis(400), categoryLabel);
+            categoryBox.setOpacity(0);
+            FadeTransition fade = new FadeTransition(Duration.millis(400), categoryBox);
             fade.setFromValue(0.0);
             fade.setToValue(1.0);
-            fade.setDelay(Duration.millis(1000 + i * 150));
+            fade.setDelay(Duration.millis(100 + i * 100));
+            fade.play();
+        }
+    }
+
+    private HBox createCategoryBox(String category, int index) {
+        HBox box = new HBox(10);
+        box.setAlignment(Pos.CENTER_LEFT);
+        box.setPadding(new Insets(8, 0, 8, 0));
+        box.setStyle("-fx-cursor: hand;");
+        
+        Label categoryLabel = new Label(category);
+        categoryLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;");
+        
+        ProgressBar miniProgress = new ProgressBar(Math.random());
+        miniProgress.setPrefWidth(80);
+        miniProgress.setPrefHeight(6);
+        miniProgress.setStyle("-fx-accent: linear-gradient(to right, #00ff88, #00d9ff);");
+        
+        box.getChildren().addAll(categoryLabel, miniProgress);
+        
+        box.setOnMouseEntered(e -> {
+            categoryLabel.setStyle("-fx-text-fill: #00d9ff; -fx-font-size: 14px; -fx-font-weight: bold;");
+        });
+        
+        box.setOnMouseExited(e -> {
+            categoryLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;");
+        });
+        
+        return box;
+    }
+
+    private void startClockUpdate() {
+        clockTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> updateTime()));
+        clockTimeline.setCycleCount(Timeline.INDEFINITE);
+        clockTimeline.play();
+    }
+
+    private void startPeriodicStatsUpdate() {
+        statsUpdateTimeline = new Timeline(new KeyFrame(Duration.seconds(5), event -> {
+            LOGGER.fine("Periodic stats update");
+        }));
+        statsUpdateTimeline.setCycleCount(Timeline.INDEFINITE);
+        statsUpdateTimeline.play();
+    }
+
+    private void animateWelcome() {
+        if (welcomeLabel != null) {
+            FadeTransition fade = new FadeTransition(Duration.millis(800), welcomeLabel);
+            fade.setFromValue(0.0);
+            fade.setToValue(1.0);
             fade.play();
         }
     }
 
     @FXML
     private void handleStartPractice() {
-        pulseButton(startPracticeButton);
         try {
-            LOGGER.info("Navigating to practice mode");
+            LOGGER.info("Starting practice session");
             App.setRoot("practice");
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to start practice", e);
-            showError("Navigation Error", "Failed to start practice session: " + e.getMessage());
-        }
-    }
-
-    @FXML
-    private void handleOpenTuner() {
-        pulseButton(tunerButton);
-        try {
-            LOGGER.info("Navigating to tuner");
-            App.setRoot("tuner");
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to open tuner", e);
-            showError("Navigation Error", "Failed to open tuner: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "Failed to open practice", e);
+            showError("Navigation Error", "Could not open practice mode");
         }
     }
 
     @FXML
     private void handleOpenLessons() {
-        pulseButton(lessonsButton);
         try {
-            LOGGER.info("Navigating to lessons");
+            LOGGER.info("Opening lessons");
             App.setRoot("lessons");
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to open lessons", e);
-            showError("Navigation Error", "Failed to open lessons: " + e.getMessage());
+            showError("Navigation Error", "Could not open lessons");
+        }
+    }
+
+    @FXML
+    private void handleOpenTuner() {
+        try {
+            LOGGER.info("Opening tuner");
+            App.setRoot("tuner");
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to open tuner", e);
+            showError("Navigation Error", "Could not open tuner");
+        }
+    }
+
+    @FXML
+    private void handleOpenTabs() {
+        try {
+            LOGGER.info("Opening tab player");
+            App.setRoot("primary");
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to open tabs", e);
+            showError("Navigation Error", "Could not open tab player");
         }
     }
 
     @FXML
     private void handleOpenStats() {
-        pulseButton(statsButton);
-        showDetailedStats();
+        try {
+            LOGGER.info("Opening statistics");
+            showAdvancedStats();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to show stats", e);
+            showError("Statistics Error", "Could not display statistics");
+        }
     }
 
-    /**
-     * Shows detailed statistics dialog with comprehensive information
-     */
-    private void showDetailedStats() {
+    private void showAdvancedStats() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Practice Statistics");
-        alert.setHeaderText("Your Progress This Week 📊");
+        alert.setHeaderText("📊 Your Progress Overview");
         
-        // Calculate weekly statistics
-        int weeklyPracticeMinutes = (int) (totalPracticeHours * 60);
-        int weeklyPracticeHours = weeklyPracticeMinutes / 60;
-        int weeklyPracticeRemainingMinutes = weeklyPracticeMinutes % 60;
-        double dailyAverage = totalPracticeHours / 7;
-        int totalSessions = sessionHistory.size();
-        int averageSessionLength = totalSessions > 0 ? weeklyPracticeMinutes / totalSessions : 0;
-        
-        alert.setContentText(
-            "🔥 Current Streak: " + currentStreak + " days\n" +
-            "⏱️ Total Practice Time: " + weeklyPracticeHours + "h " + weeklyPracticeRemainingMinutes + "m\n" +
-            "📅 Daily Average: " + String.format("%.1f", dailyAverage) + " hours\n" +
-            "📚 Lessons Completed: " + lessonsCompleted + " / " + totalLessons + "\n" +
-            "🎯 Average Accuracy: " + averageAccuracy + "%\n" +
-            "⭐ Total Sessions: " + totalSessions + "\n" +
-            "⏲️ Average Session: " + averageSessionLength + " minutes\n" +
-            "📈 Overall Progress: " + (int)(overallProgress * 100) + "%\n\n" +
-            getMotivationalMessage()
-        );
+        alert.setContentText(String.format(
+            "═══ PRACTICE SUMMARY ═══\n" +
+            "🔥 Current Streak: %d days\n" +
+            "🏆 Longest Streak: %d days\n" +
+            "⏱️ Total Practice Time: %.1f hours\n" +
+            "🎯 Average Accuracy: %d%%\n" +
+            "⭐ Total Sessions: %d\n" +
+            "🎵 Total Notes Played: %,d\n\n" +
+            "═══ PROGRESS ═══\n" +
+            "📚 Lessons Completed: %d / %d\n" +
+            "📈 Overall Progress: %d%%",
+            currentStreak,
+            longestStreak,
+            totalPracticeHours,
+            averageAccuracy,
+            totalSessions,
+            totalNotesPlayed.get(),
+            lessonsCompleted,
+            totalLessons,
+            (int)(overallProgress * 100)
+        ));
         
         alert.showAndWait();
-        LOGGER.info("Displayed detailed statistics");
     }
 
-    /**
-     * Gets motivational message based on performance
-     */
-    private String getMotivationalMessage() {
-        if (currentStreak >= 7) {
-            return "🎉 Amazing! You've practiced every day this week! Keep it up!";
-        } else if (currentStreak >= 3) {
-            return "💪 Great consistency! You're building a solid habit!";
-        } else if (averageAccuracy >= 85) {
-            return "🎯 Excellent accuracy! Your technique is improving!";
-        } else if (totalPracticeHours >= 10) {
-            return "⏱️ Great dedication! You're putting in the time!";
-        } else {
-            return "🎸 Keep practicing! Every session makes you better!";
-        }
-    }
-
-    /**
-     * Pulses a button for visual feedback
-     */
-    private void pulseButton(Button button) {
-        ScaleTransition scale = new ScaleTransition(Duration.millis(100), button);
-        scale.setFromX(1.0);
-        scale.setFromY(1.0);
-        scale.setToX(1.1);
-        scale.setToY(1.1);
-        scale.setAutoReverse(true);
-        scale.setCycleCount(2);
-        scale.play();
-    }
-
-    /**
-     * Animates a label with scale effect
-     */
-    private void animateLabel(Label label) {
-        ScaleTransition scale = new ScaleTransition(Duration.millis(800), label);
-        scale.setFromX(0.9);
-        scale.setFromY(0.9);
-        scale.setToX(1.0);
-        scale.setToY(1.0);
-        
-        FadeTransition fade = new FadeTransition(Duration.millis(800), label);
-        fade.setFromValue(0.0);
-        fade.setToValue(1.0);
-        
-        ParallelTransition parallel = new ParallelTransition(scale, fade);
-        parallel.play();
-    }
-
-    /**
-     * Shows an error dialog
-     */
     private void showError(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle(title);
+            alert.setHeaderText(null);
+            alert.setContentText(message);
+            alert.showAndWait();
+        });
     }
 
-    /**
-     * Cleanup method called when controller is destroyed
-     */
     public void cleanup() {
         LOGGER.info("Cleaning up MainController");
+        
         if (clockTimeline != null) {
             clockTimeline.stop();
+            clockTimeline = null;
         }
+        
+        if (statsUpdateTimeline != null) {
+            statsUpdateTimeline.stop();
+            statsUpdateTimeline = null;
+        }
+        
+        sessionHistory.clear();
+        achievements.clear();
+        skillLevels.clear();
+        practiceByDay.clear();
+        sessionsByDate.clear();
     }
 
-    /**
-     * Inner class representing a practice session
-     */
     private static class SessionData {
-        LocalDateTime dateTime;
-        String name;
-        int durationMinutes;
-        int rating; // 1-5 stars
-        int accuracy; // 0-100%
+        final LocalDateTime dateTime;
+        final String name;
+        final int durationMinutes;
+        final int rating;
+        final int accuracy;
+        final int notesPlayed;
         
-        SessionData(LocalDateTime dateTime, String name, int durationMinutes, int rating, int accuracy) {
+        SessionData(LocalDateTime dateTime, String name, int durationMinutes, 
+                   int rating, int accuracy, int notesPlayed) {
             this.dateTime = dateTime;
             this.name = name;
             this.durationMinutes = durationMinutes;
             this.rating = rating;
             this.accuracy = accuracy;
+            this.notesPlayed = notesPlayed;
         }
     }
 
-    /**
-     * Saves current session to history
-     */
-    public void addSession(String name, int durationMinutes, int rating, int accuracy) {
+    private static class Achievement {
+        final String name;
+        final String description;
+        boolean unlocked;
+        
+        Achievement(String name, String description, boolean unlocked) {
+            this.name = name;
+            this.description = description;
+            this.unlocked = unlocked;
+        }
+    }
+
+    public void addSession(String name, int durationMinutes, int rating, int accuracy, int notesPlayed) {
         SessionData newSession = new SessionData(
-            LocalDateTime.now(),
-            name,
-            durationMinutes,
-            rating,
-            accuracy
+            LocalDateTime.now(), name, durationMinutes, rating, accuracy, notesPlayed
         );
         
-        sessionHistory.add(0, newSession); // Add to beginning
+        sessionHistory.add(0, newSession);
+        sessionsByDate.put(newSession.dateTime.toLocalDate(), newSession);
         
-        // Keep only recent sessions
+        DayOfWeek day = newSession.dateTime.getDayOfWeek();
+        practiceByDay.merge(day, 1, Integer::sum);
+        
+        if (accuracy >= 95) {
+            perfectSessions++;
+        }
+        
         if (sessionHistory.size() > MAX_RECENT_SESSIONS) {
             sessionHistory.remove(sessionHistory.size() - 1);
         }
         
-        // Reload the display
+        totalSessions++;
+        totalNotesPlayed.addAndGet(notesPlayed);
         loadRecentSessions();
-        
-        // Update statistics
-        updateStatistics();
-        
-        LOGGER.info("Added new session: " + name);
+        checkForMilestones();
     }
 
-    /**
-     * Updates overall statistics based on session history
-     */
-    private void updateStatistics() {
-        if (sessionHistory.isEmpty()) {
-            return;
-        }
-        
-        // Calculate total practice time
-        int totalMinutes = 0;
-        int totalAccuracySum = 0;
-        
-        for (SessionData session : sessionHistory) {
-            totalMinutes += session.durationMinutes;
-            totalAccuracySum += session.accuracy;
-        }
-        
-        totalPracticeHours = totalMinutes / 60.0;
-        averageAccuracy = totalAccuracySum / sessionHistory.size();
-        
-        // Update streak (check consecutive days)
-        currentStreak = calculateStreak();
-        
-        LOGGER.info("Statistics updated: " + totalPracticeHours + "h, " + 
-                   averageAccuracy + "% accuracy, " + currentStreak + " day streak");
-    }
-
-    /**
-     * Calculates current practice streak
-     */
-    private int calculateStreak() {
-        if (sessionHistory.isEmpty()) {
-            return 0;
-        }
-        
-        int streak = 1;
-        LocalDateTime lastDate = sessionHistory.get(0).dateTime.toLocalDate().atStartOfDay();
-        
-        for (int i = 1; i < sessionHistory.size(); i++) {
-            LocalDateTime currentDate = sessionHistory.get(i).dateTime.toLocalDate().atStartOfDay();
-            long daysDiff = java.time.Duration.between(currentDate, lastDate).toDays();
-            
-            if (daysDiff == 1) {
-                streak++;
-                lastDate = currentDate;
-            } else {
-                break;
-            }
-        }
-        
-        return streak;
-    }
-
-    /**
-     * Updates progress based on completed lessons
-     */
     public void updateProgress(int completedLessons) {
         this.lessonsCompleted = completedLessons;
         this.overallProgress = (double) completedLessons / totalLessons;
         
-        // Animate progress bar
-        Timeline progressAnimation = new Timeline(
-            new KeyFrame(Duration.ZERO, 
-                new KeyValue(overallProgressBar.progressProperty(), 
-                    overallProgressBar.getProgress())),
-            new KeyFrame(Duration.millis(1000), 
-                new KeyValue(overallProgressBar.progressProperty(), 
-                    overallProgress))
-        );
-        progressAnimation.play();
-        
-        // Update label
-        int percentComplete = (int) (overallProgress * 100);
-        progressLabel.setText(percentComplete + "% Complete");
-        
-        LOGGER.info("Progress updated: " + completedLessons + " lessons completed");
+        Platform.runLater(() -> {
+            if (overallProgressBar != null) {
+                Timeline progressAnimation = new Timeline(
+                    new KeyFrame(Duration.ZERO, 
+                        new KeyValue(overallProgressBar.progressProperty(), 
+                            overallProgressBar.getProgress())),
+                    new KeyFrame(Duration.millis(1000), 
+                        new KeyValue(overallProgressBar.progressProperty(), 
+                            overallProgress, Interpolator.EASE_BOTH))
+                );
+                progressAnimation.play();
+            }
+            
+            if (progressLabel != null) {
+                int percentComplete = (int) (overallProgress * 100);
+                progressLabel.setText(String.format("%d%% Complete - %d/%d Lessons", 
+                    percentComplete, completedLessons, totalLessons));
+            }
+        });
     }
 }
