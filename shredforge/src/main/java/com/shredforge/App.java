@@ -35,6 +35,15 @@ public class App extends Application {
 
             scene = new Scene(loadFXML("mainmenu"), DEFAULT_WIDTH, DEFAULT_HEIGHT);
 
+            // Apply modern theme stylesheet
+            try {
+                String stylesheet = App.class.getResource("modern-theme.css").toExternalForm();
+                scene.getStylesheets().add(stylesheet);
+                LOGGER.info("Modern theme applied successfully");
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Failed to load modern theme, using default", e);
+            }
+
             // Configure the primary stage
             stage.setTitle(APP_TITLE);
             stage.setScene(scene);

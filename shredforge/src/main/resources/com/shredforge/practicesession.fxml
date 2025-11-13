@@ -11,24 +11,24 @@
 
     <!-- Top: Info Panel -->
     <top>
-        <HBox alignment="CENTER" spacing="30.0" style="-fx-background-color: #f5f5f5; -fx-padding: 15;">
+        <HBox alignment="CENTER" spacing="30.0" style="-fx-background-color: linear-gradient(to bottom, #667eea 0%, #764ba2 100%); -fx-padding: 20;">
             <VBox alignment="CENTER" spacing="5.0">
-                <Label text="Accuracy" style="-fx-font-weight: bold;" />
-                <Label fx:id="accuracyLabel" text="0.0%" style="-fx-font-size: 20px; -fx-text-fill: #2196F3;" />
+                <Label text="Accuracy" style="-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 13px;" />
+                <Label fx:id="accuracyLabel" text="0.0%" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;" />
             </VBox>
 
             <VBox alignment="CENTER" spacing="5.0">
-                <Label text="Notes Completed" style="-fx-font-weight: bold;" />
-                <Label fx:id="notesCompletedLabel" text="0 / 0" style="-fx-font-size: 20px;" />
+                <Label text="Notes Completed" style="-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 13px;" />
+                <Label fx:id="notesCompletedLabel" text="0 / 0" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;" />
             </VBox>
 
             <VBox alignment="CENTER" spacing="5.0">
-                <Label fx:id="streakLabel" text="Streak: 0" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #FF9800;" />
+                <Label fx:id="streakLabel" text="🔥 Streak: 0" style="-fx-font-weight: bold; -fx-font-size: 20px; -fx-text-fill: #FFD700;" />
             </VBox>
 
             <VBox alignment="CENTER" spacing="5.0">
-                <Label text="Time" style="-fx-font-weight: bold;" />
-                <Label fx:id="timeLabel" text="00:00" style="-fx-font-size: 20px;" />
+                <Label text="Time" style="-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 13px;" />
+                <Label fx:id="timeLabel" text="00:00" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;" />
             </VBox>
         </HBox>
     </top>
