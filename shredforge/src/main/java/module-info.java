@@ -9,9 +9,8 @@ module com.shredforge {
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.core;
 
-    // Audio processing - TarsosDSP (automatic modules)
-    requires be.tarsos.dsp.core;  // TarsosDSP core library
-    requires be.tarsos.dsp.jvm;   // TarsosDSP JVM audio support
+    // Audio processing - TarsosDSP handled via compiler arguments
+    // TarsosDSP is a non-modular library, configured in pom.xml
 
     // Java standard modules
     requires java.logging;

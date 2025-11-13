@@ -64,6 +64,11 @@
                     <version>3.8.0</version>
                     <configuration>
                         <release>17</release>
+                        <compilerArgs>
+                            <!-- Allow access to TarsosDSP non-modular library -->
+                            <arg>--add-reads</arg>
+                            <arg>com.shredforge=ALL-UNNAMED</arg>
+                        </compilerArgs>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -95,6 +100,11 @@
                     <version>0.0.8</version>
                     <configuration>
                         <mainClass>com.shredforge.App</mainClass>
+                        <options>
+                            <!-- Allow access to TarsosDSP non-modular library at runtime -->
+                            <option>--add-reads</option>
+                            <option>com.shredforge=ALL-UNNAMED</option>
+                        </options>
                     </configuration>
                     <executions>
                         <execution>
