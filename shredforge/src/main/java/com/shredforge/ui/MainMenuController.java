@@ -158,8 +158,20 @@ public class MainMenuController {
     @FXML
     private void handleExit() {
         LOGGER.info("Exit clicked");
-        Platform.exit();
-        System.exit(0);
+
+        // Show confirmation dialog
+        boolean confirmed = DialogHelper.showConfirmation(
+            "Exit ShredForge",
+            "Are you sure you want to exit?\n\nAll unsaved progress will be lost."
+        );
+
+        if (confirmed) {
+            LOGGER.info("Exit confirmed by user");
+            Platform.exit();
+            System.exit(0);
+        } else {
+            LOGGER.info("Exit cancelled by user");
+        }
     }
 
     /**

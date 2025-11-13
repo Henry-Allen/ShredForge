@@ -52,10 +52,29 @@ public class App extends Application {
             stage.show();
             LOGGER.info("ShredForge application started successfully");
 
+            // Show welcome dialog on first launch
+            showWelcomeIfFirstLaunch();
+
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Failed to start application", e);
             showErrorAndExit("Failed to load application interface", e);
         }
+    }
+
+    /**
+     * Show welcome dialog if this is the first launch
+     */
+    private void showWelcomeIfFirstLaunch() {
+        Platform.runLater(() -> {
+            com.shredforge.repository.ShredForgeRepository repository =
+                com.shredforge.repository.ShredForgeRepository.getInstance();
+
+            if (!repository.hasSeenWelcome()) {
+                LOGGER.info("First launch detected - showing welcome dialog");
+                com.shredforge.ui.DialogHelper.showWelcome();
+                repository.markWelcomeSeen();
+            }
+        });
     }
 
     /**

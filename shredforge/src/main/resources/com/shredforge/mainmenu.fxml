@@ -3,6 +3,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.text.Font?>
@@ -37,6 +38,9 @@
             <font>
                 <Font size="13.0" />
             </font>
+            <tooltip>
+                <Tooltip text="Continue practicing your most recent tab" />
+            </tooltip>
         </Button>
     </VBox>
 
@@ -49,36 +53,54 @@
             <font>
                 <Font size="16.0" />
             </font>
+            <tooltip>
+                <Tooltip text="Search and download guitar tabs from online sources" />
+            </tooltip>
         </Button>
 
         <Button fx:id="myTabsButton" text="My Tabs" maxWidth="Infinity" minHeight="50.0" onAction="#handleMyTabs">
             <font>
                 <Font size="16.0" />
             </font>
+            <tooltip>
+                <Tooltip text="View and manage your downloaded tabs" />
+            </tooltip>
         </Button>
 
         <Button fx:id="calibrateButton" text="Calibrate Input" maxWidth="Infinity" minHeight="50.0" onAction="#handleCalibrate">
             <font>
                 <Font size="16.0" />
             </font>
+            <tooltip>
+                <Tooltip text="Calibrate your guitar audio input for accurate note detection" />
+            </tooltip>
         </Button>
 
         <Button fx:id="settingsButton" text="Settings" maxWidth="Infinity" minHeight="50.0" onAction="#handleSettings">
             <font>
                 <Font size="16.0" />
             </font>
+            <tooltip>
+                <Tooltip text="Configure audio devices, detection sensitivity, and preferences" />
+            </tooltip>
         </Button>
 
         <Button fx:id="helpButton" text="⌨ Keyboard Shortcuts" maxWidth="Infinity" minHeight="40.0" onAction="#handleHelp" style="-fx-background-color: #2196F3; -fx-text-fill: white;">
             <font>
                 <Font size="14.0" />
             </font>
+            <tooltip>
+                <Tooltip text="View all available keyboard shortcuts for the app" />
+            </tooltip>
         </Button>
 
         <Button fx:id="exitButton" text="Exit" maxWidth="Infinity" minHeight="40.0" onAction="#handleExit">
             <font>
                 <Font size="14.0" />
             </font>
+            <tooltip>
+                <Tooltip text="Close the application" />
+            </tooltip>
         </Button>
     </VBox>
 

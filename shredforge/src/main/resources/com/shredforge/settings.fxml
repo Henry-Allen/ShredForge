@@ -4,6 +4,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
+<?import javafx.scene.control.Tooltip?>
 
 <VBox alignment="TOP_CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.shredforge.ui.SettingsController">
     <padding>
@@ -44,7 +45,11 @@
 
             <!-- Audio Test -->
             <HBox alignment="CENTER_LEFT" spacing="15.0">
-                <Button fx:id="testAudioButton" text="Test Audio Input" onAction="#handleTestAudio" minWidth="150.0" />
+                <Button fx:id="testAudioButton" text="Test Audio Input" onAction="#handleTestAudio" minWidth="150.0">
+                    <tooltip>
+                        <Tooltip text="Test your audio input to verify it's working correctly" />
+                    </tooltip>
+                </Button>
                 <ProgressBar fx:id="audioLevelMeter" progress="0.0" prefWidth="200.0" />
             </HBox>
         </VBox>
@@ -86,18 +91,27 @@
             <font>
                 <Font size="14.0" />
             </font>
+            <tooltip>
+                <Tooltip text="Save all settings changes" />
+            </tooltip>
         </Button>
 
         <Button fx:id="resetButton" text="Reset to Defaults" onAction="#handleReset" minWidth="150.0">
             <font>
                 <Font size="14.0" />
             </font>
+            <tooltip>
+                <Tooltip text="Reset all settings to their default values" />
+            </tooltip>
         </Button>
 
         <Button fx:id="backButton" text="Back to Menu" onAction="#handleBack" minWidth="120.0">
             <font>
                 <Font size="14.0" />
             </font>
+            <tooltip>
+                <Tooltip text="Return to main menu" />
+            </tooltip>
         </Button>
     </HBox>
 

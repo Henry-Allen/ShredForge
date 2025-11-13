@@ -28,6 +28,7 @@ public class ShredForgeRepository {
     private boolean isCalibrated;
     private float masterVolume;
     private String theme;
+    private boolean hasSeenWelcome;
 
     // Persistence and utilities
     private final DataPersistence persistence;
@@ -65,6 +66,7 @@ public class ShredForgeRepository {
         this.audioInputDevice = settings.audioInputDevice;
         this.masterVolume = settings.masterVolume;
         this.theme = settings.theme != null ? settings.theme : "light";
+        this.hasSeenWelcome = settings.hasSeenWelcome;
 
         // Load recent tabs
         if (settings.recentTabs != null && !settings.recentTabs.isEmpty()) {
@@ -277,6 +279,7 @@ public class ShredForgeRepository {
         settings.audioInputDevice = this.audioInputDevice;
         settings.masterVolume = this.masterVolume;
         settings.theme = this.theme;
+        settings.hasSeenWelcome = this.hasSeenWelcome;
         settings.recentTabs = recentTabsTracker.toList();
         if (!recentTabsTracker.isEmpty()) {
             settings.lastPracticedTab = recentTabsTracker.getMostRecent();
@@ -377,6 +380,23 @@ public class ShredForgeRepository {
             setTheme("dark");
         }
         return theme;
+    }
+
+    /**
+     * Check if user has seen the welcome dialog
+     * @return True if welcome dialog has been shown before
+     */
+    public boolean hasSeenWelcome() {
+        return hasSeenWelcome;
+    }
+
+    /**
+     * Mark that the user has seen the welcome dialog
+     */
+    public void markWelcomeSeen() {
+        this.hasSeenWelcome = true;
+        saveSettings();
+        LOGGER.info("Welcome dialog marked as seen");
     }
 
     // ========== Recent Tabs Management ==========

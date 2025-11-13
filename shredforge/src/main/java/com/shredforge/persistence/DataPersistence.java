@@ -379,6 +379,7 @@ public class DataPersistence {
         public String theme = "light"; // "light" or "dark"
         public java.util.List<String> recentTabs = new java.util.ArrayList<>();
         public String lastPracticedTab = null;
+        public boolean hasSeenWelcome = false; // Track if user has seen welcome dialog
 
         public AppSettings() {
         }

@@ -152,4 +152,20 @@ public class DialogHelper {
             "• Ctrl+C - Calibrate\n" +
             "• F1 - Help");
     }
+
+    /**
+     * Show about dialog with app information
+     */
+    public static void showAbout() {
+        showInfo("About ShredForge",
+            "ShredForge v1.0\n\n" +
+            "Guitar Practice & Training Application\n\n" +
+            "Features:\n" +
+            "• Real-time note detection\n" +
+            "• Guitar tablature practice\n" +
+            "• Progress tracking\n" +
+            "• Audio input calibration\n\n" +
+            "Developed for music education and practice.\n\n" +
+            "© 2024 ShredForge Team");
+    }
 }
