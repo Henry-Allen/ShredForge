@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="TOP_CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.shredforge.ui.MyTabsController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+    </padding>
+
+    <!-- Title -->
+    <Label text="My Tabs" textAlignment="CENTER">
+        <font>
+            <Font name="System Bold" size="32.0" />
+        </font>
+    </Label>
+
+    <Label fx:id="tabCountLabel" text="Total Tabs: 0">
+        <font>
+            <Font size="14.0" />
+        </font>
+    </Label>
+
+    <!-- Tabs Table -->
+    <TableView fx:id="tabsTable" VBox.vgrow="ALWAYS" maxWidth="900.0" minHeight="400.0">
+        <columns>
+            <TableColumn fx:id="titleColumn" text="Title" prefWidth="300.0" />
+            <TableColumn fx:id="artistColumn" text="Artist" prefWidth="250.0" />
+            <TableColumn fx:id="difficultyColumn" text="Difficulty" prefWidth="120.0" />
+            <TableColumn fx:id="tempoColumn" text="Tempo (BPM)" prefWidth="120.0" />
+        </columns>
+    </TableView>
+
+    <!-- Action Buttons -->
+    <HBox alignment="CENTER" spacing="15.0">
+        <Button fx:id="practiceButton" text="Practice Selected" onAction="#handlePractice" minWidth="150.0" disable="true" style="-fx-background-color: #4CAF50; -fx-text-fill: white;">
+            <font>
+                <Font size="14.0" />
+            </font>
+        </Button>
+
+        <Button fx:id="deleteButton" text="Delete Selected" onAction="#handleDelete" minWidth="130.0" disable="true">
+            <font>
+                <Font size="14.0" />
+            </font>
+        </Button>
+
+        <Button text="Refresh" onAction="#handleRefresh" minWidth="100.0">
+            <font>
+                <Font size="14.0" />
+            </font>
+        </Button>
+
+        <Button fx:id="backButton" text="Back to Menu" onAction="#handleBack" minWidth="120.0">
+            <font>
+                <Font size="14.0" />
+            </font>
+        </Button>
+    </HBox>
+
+    <!-- Status Label -->
+    <Label fx:id="statusLabel" text="Select a tab to practice">
+        <font>
+            <Font size="12.0" />
+        </font>
+    </Label>
+
+    <!-- Help Text -->
+    <VBox alignment="CENTER" spacing="5.0" maxWidth="600.0" style="-fx-background-color: #f5f5f5; -fx-padding: 15; -fx-background-radius: 5;">
+        <Label text="💡 Quick Start Guide" style="-fx-font-weight: bold;" />
+        <Label text="1. Select a tab from the list above" wrapText="true" textAlignment="CENTER" />
+        <Label text="2. Click 'Practice Selected' to start your practice session" wrapText="true" textAlignment="CENTER" />
+        <Label text="3. If you don't have any tabs, use 'Search Tabs' to download some!" wrapText="true" textAlignment="CENTER" />
+    </VBox>
+</VBox>

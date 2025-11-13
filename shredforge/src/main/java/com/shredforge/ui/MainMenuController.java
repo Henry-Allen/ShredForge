@@ -97,12 +97,12 @@ public class MainMenuController {
     @FXML
     private void handleMyTabs() {
         LOGGER.info("My Tabs clicked");
-        int count = repository.getTabCount();
-        if (statusLabel != null) {
-            if (count == 0) {
-                statusLabel.setText("No tabs saved yet. Search and download tabs to get started!");
-            } else {
-                statusLabel.setText("You have " + count + " saved tab" + (count == 1 ? "" : "s"));
+        try {
+            com.shredforge.App.setRoot("mytabs");
+        } catch (Exception e) {
+            LOGGER.severe("Failed to load my tabs: " + e.getMessage());
+            if (statusLabel != null) {
+                statusLabel.setText("Error loading my tabs");
             }
         }
     }

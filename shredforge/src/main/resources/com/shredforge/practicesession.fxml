@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.shredforge.ui.PracticeSessionController">
+
+    <!-- Top: Info Panel -->
+    <top>
+        <HBox alignment="CENTER" spacing="30.0" style="-fx-background-color: #f5f5f5; -fx-padding: 15;">
+            <VBox alignment="CENTER" spacing="5.0">
+                <Label text="Accuracy" style="-fx-font-weight: bold;" />
+                <Label fx:id="accuracyLabel" text="0.0%" style="-fx-font-size: 20px; -fx-text-fill: #2196F3;" />
+            </VBox>
+
+            <VBox alignment="CENTER" spacing="5.0">
+                <Label text="Notes Completed" style="-fx-font-weight: bold;" />
+                <Label fx:id="notesCompletedLabel" text="0 / 0" style="-fx-font-size: 20px;" />
+            </VBox>
+
+            <VBox alignment="CENTER" spacing="5.0">
+                <Label fx:id="streakLabel" text="Streak: 0" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #FF9800;" />
+            </VBox>
+
+            <VBox alignment="CENTER" spacing="5.0">
+                <Label text="Time" style="-fx-font-weight: bold;" />
+                <Label fx:id="timeLabel" text="00:00" style="-fx-font-size: 20px;" />
+            </VBox>
+        </HBox>
+    </top>
+
+    <!-- Center: Tab Display Area -->
+    <center>
+        <StackPane>
+            <Canvas fx:id="tabCanvas" width="800.0" height="400.0" />
+
+            <!-- Feedback Overlay -->
+            <VBox alignment="TOP_CENTER" spacing="10.0" StackPane.alignment="TOP_CENTER">
+                <padding>
+                    <Insets top="10.0" />
+                </padding>
+                <Label fx:id="feedbackLabel" text="" style="-fx-font-size: 24px; -fx-font-weight: bold;">
+                    <font>
+                        <Font size="24.0" />
+                    </font>
+                </Label>
+            </VBox>
+        </StackPane>
+    </center>
+
+    <!-- Bottom: Controls -->
+    <bottom>
+        <VBox spacing="15.0">
+            <padding>
+                <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+            </padding>
+
+            <!-- Progress Bar -->
+            <VBox spacing="5.0">
+                <Label text="Progress" />
+                <ProgressBar fx:id="progressBar" progress="0.0" maxWidth="Infinity" prefHeight="15.0" />
+            </VBox>
+
+            <!-- Control Panel -->
+            <HBox alignment="CENTER" spacing="20.0">
+                <!-- Playback Controls -->
+                <HBox alignment="CENTER" spacing="10.0">
+                    <Button fx:id="playButton" text="▶ Play" onAction="#handlePlay" minWidth="80.0" style="-fx-background-color: #4CAF50; -fx-text-fill: white;">
+                        <font>
+                            <Font size="14.0" />
+                        </font>
+                    </Button>
+
+                    <Button fx:id="pauseButton" text="⏸ Pause" onAction="#handlePause" minWidth="80.0" disable="true">
+                        <font>
+                            <Font size="14.0" />
+                        </font>
+                    </Button>
+
+                    <Button fx:id="stopButton" text="⏹ Stop" onAction="#handleStop" minWidth="80.0" style="-fx-background-color: #f44336; -fx-text-fill: white;" disable="true">
+                        <font>
+                            <Font size="14.0" />
+                        </font>
+                    </Button>
+                </HBox>
+
+                <!-- Tempo Control -->
+                <VBox alignment="CENTER" spacing="5.0" minWidth="200.0">
+                    <HBox alignment="CENTER" spacing="10.0">
+                        <Label text="Tempo:" />
+                        <Label fx:id="tempoLabel" text="100%" style="-fx-font-weight: bold;" />
+                    </HBox>
+                    <Slider fx:id="tempoSlider" min="50.0" max="100.0" value="100.0" showTickLabels="true" showTickMarks="true" majorTickUnit="25.0" minorTickCount="5" />
+                </VBox>
+
+                <!-- Navigation -->
+                <Button text="Back to Menu" onAction="#handleBack" minWidth="120.0">
+                    <font>
+                        <Font size="14.0" />
+                    </font>
+                </Button>
+            </HBox>
+
+            <!-- Status Label -->
+            <Label fx:id="statusLabel" text="Ready" textAlignment="CENTER" style="-fx-font-size: 12px;">
+                <font>
+                    <Font size="12.0" />
+                </font>
+            </Label>
+        </VBox>
+    </bottom>
+</BorderPane>

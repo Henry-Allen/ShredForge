@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="TOP_CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.shredforge.ui.ScoreReportController">
+    <padding>
+        <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
+    </padding>
+
+    <!-- Title -->
+    <Label text="Practice Complete!" textAlignment="CENTER">
+        <font>
+            <Font name="System Bold" size="32.0" />
+        </font>
+    </Label>
+
+    <Label fx:id="tabTitleLabel" text="Tab Name - Artist" textAlignment="CENTER">
+        <font>
+            <Font size="16.0" />
+        </font>
+    </Label>
+
+    <!-- Overall Score Section -->
+    <VBox alignment="CENTER" spacing="15.0" style="-fx-background-color: #f5f5f5; -fx-padding: 30; -fx-background-radius: 10;">
+        <Label text="Accuracy" style="-fx-font-size: 16px;" />
+
+        <Label fx:id="scoreLabel" text="0.0%" textAlignment="CENTER">
+            <font>
+                <Font name="System Bold" size="48.0" />
+            </font>
+        </Label>
+
+        <Label fx:id="gradeLabel" text="C" textAlignment="CENTER">
+            <font>
+                <Font name="System Bold" size="72.0" />
+            </font>
+        </Label>
+
+        <!-- Star Rating -->
+        <HBox fx:id="starRatingBox" alignment="CENTER" spacing="5.0">
+            <!-- Stars added programmatically -->
+        </HBox>
+    </VBox>
+
+    <!-- Statistics Panel -->
+    <GridPane hgap="20.0" vgap="15.0" maxWidth="600.0">
+        <columnConstraints>
+            <ColumnConstraints halignment="RIGHT" minWidth="150.0" />
+            <ColumnConstraints halignment="LEFT" minWidth="100.0" />
+            <ColumnConstraints halignment="RIGHT" minWidth="150.0" />
+            <ColumnConstraints halignment="LEFT" minWidth="100.0" />
+        </columnConstraints>
+
+        <!-- Row 1 -->
+        <Label text="Total Notes:" GridPane.columnIndex="0" GridPane.rowIndex="0" style="-fx-font-weight: bold;" />
+        <Label fx:id="totalNotesLabel" text="0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+        <Label text="Correct Notes:" GridPane.columnIndex="2" GridPane.rowIndex="0" style="-fx-font-weight: bold;" />
+        <Label fx:id="correctNotesLabel" text="0" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+
+        <!-- Row 2 -->
+        <Label text="Incorrect Notes:" GridPane.columnIndex="0" GridPane.rowIndex="1" style="-fx-font-weight: bold;" />
+        <Label fx:id="incorrectNotesLabel" text="0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+        <Label text="Missed Notes:" GridPane.columnIndex="2" GridPane.rowIndex="1" style="-fx-font-weight: bold;" />
+        <Label fx:id="missedNotesLabel" text="0" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+
+        <!-- Row 3 -->
+        <Label text="Avg Timing Error:" GridPane.columnIndex="0" GridPane.rowIndex="2" style="-fx-font-weight: bold;" />
+        <Label fx:id="avgTimingLabel" text="0 ms" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+        <Label text="Longest Streak:" GridPane.columnIndex="2" GridPane.rowIndex="2" style="-fx-font-weight: bold;" />
+        <Label fx:id="longestStreakLabel" text="0" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+
+        <!-- Row 4 -->
+        <Label text="Total Duration:" GridPane.columnIndex="0" GridPane.rowIndex="3" style="-fx-font-weight: bold;" />
+        <Label fx:id="durationLabel" text="00:00" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+    </GridPane>
+
+    <!-- Spacer -->
+    <VBox VBox.vgrow="ALWAYS" />
+
+    <!-- Action Buttons -->
+    <HBox alignment="CENTER" spacing="15.0">
+        <Button fx:id="practiceAgainButton" text="Practice Again" onAction="#handlePracticeAgain" minWidth="150.0" style="-fx-background-color: #4CAF50; -fx-text-fill: white;">
+            <font>
+                <Font size="14.0" />
+            </font>
+        </Button>
+
+        <Button fx:id="backToMenuButton" text="Back to Menu" onAction="#handleBackToMenu" minWidth="150.0">
+            <font>
+                <Font size="14.0" />
+            </font>
+        </Button>
+    </HBox>
+
+    <!-- Footer Message -->
+    <Label text="Great job! Keep practicing to improve your skills." textAlignment="CENTER" style="-fx-font-style: italic;">
+        <font>
+            <Font size="12.0" />
+        </font>
+    </Label>
+</VBox>
