@@ -9,8 +9,8 @@ module com.shredforge {
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.core;
 
-    // Audio processing
-    // TarsosDSP is not a JPMS module, so it's automatically available on the classpath
+    // Audio processing - TarsosDSP (automatic module)
+    requires TarsosDSP;
 
     // Java standard modules
     requires java.logging;
