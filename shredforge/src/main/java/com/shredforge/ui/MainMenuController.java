@@ -84,8 +84,13 @@ public class MainMenuController {
     @FXML
     private void handleSearchTabs() {
         LOGGER.info("Search Tabs clicked");
-        if (statusLabel != null) {
-            statusLabel.setText("Tab Search feature - Coming soon!");
+        try {
+            com.shredforge.App.setRoot("tabsearch");
+        } catch (Exception e) {
+            LOGGER.severe("Failed to load tab search: " + e.getMessage());
+            if (statusLabel != null) {
+                statusLabel.setText("Error loading tab search");
+            }
         }
     }
 
@@ -94,15 +99,24 @@ public class MainMenuController {
         LOGGER.info("My Tabs clicked");
         int count = repository.getTabCount();
         if (statusLabel != null) {
-            statusLabel.setText("You have " + count + " saved tabs");
+            if (count == 0) {
+                statusLabel.setText("No tabs saved yet. Search and download tabs to get started!");
+            } else {
+                statusLabel.setText("You have " + count + " saved tab" + (count == 1 ? "" : "s"));
+            }
         }
     }
 
     @FXML
     private void handleCalibrate() {
         LOGGER.info("Calibrate clicked");
-        if (statusLabel != null) {
-            statusLabel.setText("Calibration feature - Connect your guitar and follow instructions");
+        try {
+            com.shredforge.App.setRoot("calibration");
+        } catch (Exception e) {
+            LOGGER.severe("Failed to load calibration: " + e.getMessage());
+            if (statusLabel != null) {
+                statusLabel.setText("Error loading calibration");
+            }
         }
     }
 

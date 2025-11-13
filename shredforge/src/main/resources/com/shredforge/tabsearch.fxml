@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="TOP_CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.shredforge.ui.TabSearchController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+    </padding>
+
+    <!-- Title -->
+    <Label text="Search Tabs" textAlignment="CENTER">
+        <font>
+            <Font name="System Bold" size="32.0" />
+        </font>
+    </Label>
+
+    <!-- Search Controls -->
+    <HBox alignment="CENTER" spacing="15.0" maxWidth="800.0">
+        <TextField fx:id="searchField" promptText="Enter song or artist name..." HBox.hgrow="ALWAYS" minWidth="300.0">
+            <font>
+                <Font size="14.0" />
+            </font>
+        </TextField>
+
+        <ChoiceBox fx:id="difficultyFilter" minWidth="100.0" />
+
+        <Button fx:id="searchButton" text="Search" onAction="#handleSearch" minWidth="80.0">
+            <font>
+                <Font size="14.0" />
+            </font>
+        </Button>
+    </HBox>
+
+    <!-- Results Table -->
+    <TableView fx:id="resultsTable" VBox.vgrow="ALWAYS" maxWidth="800.0" minHeight="300.0">
+        <columns>
+            <TableColumn fx:id="titleColumn" text="Title" prefWidth="250.0" />
+            <TableColumn fx:id="artistColumn" text="Artist" prefWidth="200.0" />
+            <TableColumn fx:id="difficultyColumn" text="Difficulty" prefWidth="100.0" />
+            <TableColumn fx:id="ratingColumn" text="Rating" prefWidth="80.0" />
+        </columns>
+    </TableView>
+
+    <!-- Action Buttons -->
+    <HBox alignment="CENTER" spacing="15.0">
+        <Button fx:id="downloadButton" text="Download Selected" onAction="#handleDownload" minWidth="150.0">
+            <font>
+                <Font size="14.0" />
+            </font>
+        </Button>
+
+        <ProgressIndicator fx:id="loadingIndicator" maxHeight="30.0" maxWidth="30.0" visible="false" />
+
+        <Button fx:id="backButton" text="Back to Menu" onAction="#handleBack" minWidth="120.0">
+            <font>
+                <Font size="14.0" />
+            </font>
+        </Button>
+    </HBox>
+
+    <!-- Status Label -->
+    <Label fx:id="statusLabel" text="Enter a search query and click Search">
+        <font>
+            <Font size="12.0" />
+        </font>
+    </Label>
+</VBox>

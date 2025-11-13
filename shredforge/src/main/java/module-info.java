@@ -25,6 +25,7 @@ module com.shredforge {
     exports com.shredforge.input;
     exports com.shredforge.notedetection;
     exports com.shredforge.calibration;
+    exports com.shredforge.playback;
     exports com.shredforge.ui;
 
     // Open packages to JavaFX for FXML and reflection
