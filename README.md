@@ -8,10 +8,32 @@ ShredForge is a desktop application that provides musicians with tools to practi
 
 ## Features
 
-- Modern JavaFX-based user interface
-- Cross-platform support (Windows, macOS, Linux)
-- Real-time audio processing capabilities (TarsosDSP integration)
-- Modular architecture for easy extension
+### Implemented
+- **Repository Pattern Architecture**: Centralized data management through ShredForgeRepository
+- **Tab Management**: Search, download, and save guitar tabs from Songsterr API
+- **Audio Input System**: Capture and process guitar audio using Java Sound API
+- **Note Detection Engine**: Real-time pitch detection using TarsosDSP with YIN algorithm
+- **Calibration System**: Guitar input calibration for accurate note recognition
+- **Practice Session Tracking**: Monitor performance with accuracy metrics and scoring
+- **Modern JavaFX UI**: Clean main menu interface with status indicators
+- **Cross-platform Support**: Works on Windows, macOS, and Linux
+
+### Architecture (Per Google Doc Specification)
+ShredForge follows the **Repository architectural pattern** with five main subsystems:
+
+1. **Repository** (`com.shredforge.repository`): Central data management hub
+2. **Tab Get/Save** (`com.shredforge.tab`): Tab retrieval and local storage
+3. **Input Handling** (`com.shredforge.input`): Audio capture and signal processing
+4. **Note Detection** (`com.shredforge.notedetection`): Frequency analysis and note identification
+5. **Calibration** (`com.shredforge.calibration`): Input calibration service
+
+### Data Models
+- `Note`: Musical note with pitch, timing, and position information
+- `DetectedNote`: Note detected from live audio with confidence metrics
+- `Tab`: Guitar tablature with metadata and note sequences
+- `Session`: Practice session with performance tracking
+- `CalibrationData`: Frequency offsets for each guitar string
+- `ScoreReport`: Detailed performance analysis and grading
 
 ## Requirements
 

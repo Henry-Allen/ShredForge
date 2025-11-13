@@ -29,7 +29,7 @@ public class App extends Application {
     public void start(Stage stage) {
         try {
             primaryStage = stage;
-            scene = new Scene(loadFXML("primary"), DEFAULT_WIDTH, DEFAULT_HEIGHT);
+            scene = new Scene(loadFXML("mainmenu"), DEFAULT_WIDTH, DEFAULT_HEIGHT);
 
             // Configure the primary stage
             stage.setTitle(APP_TITLE);
@@ -40,6 +40,7 @@ public class App extends Application {
             // Set up proper application closing
             stage.setOnCloseRequest(event -> {
                 LOGGER.info("Application closing");
+                cleanup();
                 Platform.exit();
                 System.exit(0);
             });
@@ -51,6 +52,14 @@ public class App extends Application {
             LOGGER.log(Level.SEVERE, "Failed to start application", e);
             showErrorAndExit("Failed to load application interface", e);
         }
+    }
+
+    /**
+     * Cleanup resources before exit
+     */
+    private void cleanup() {
+        LOGGER.info("Cleaning up resources...");
+        // Add any cleanup logic here (close audio streams, save state, etc.)
     }
 
     /**
