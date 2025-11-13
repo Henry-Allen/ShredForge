@@ -138,6 +138,9 @@ public class App extends Application {
                 LOGGER.log(Level.WARNING, "Failed to load modern theme, using default", e);
             }
 
+            // Hide stage temporarily to change style
+            stage.hide();
+
             // Configure the primary stage
             stage.setTitle(APP_TITLE);
             stage.initStyle(StageStyle.DECORATED);
