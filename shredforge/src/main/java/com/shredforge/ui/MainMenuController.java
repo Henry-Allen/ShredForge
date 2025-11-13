@@ -47,6 +47,9 @@ public class MainMenuController {
     private Button helpButton;
 
     @FXML
+    private Button aboutButton;
+
+    @FXML
     private Button exitButton;
 
     @FXML
@@ -153,6 +156,12 @@ public class MainMenuController {
     private void handleHelp() {
         LOGGER.info("Help clicked");
         DialogHelper.showKeyboardShortcuts();
+    }
+
+    @FXML
+    private void handleAbout() {
+        LOGGER.info("About clicked");
+        DialogHelper.showAbout();
     }
 
     @FXML

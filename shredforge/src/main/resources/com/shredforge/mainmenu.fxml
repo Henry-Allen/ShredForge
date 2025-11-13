@@ -85,18 +85,30 @@
             </tooltip>
         </Button>
 
-        <Button fx:id="helpButton" text="⌨ Keyboard Shortcuts" maxWidth="Infinity" minHeight="40.0" onAction="#handleHelp" style="-fx-background-color: #2196F3; -fx-text-fill: white;">
+        <!-- Spacer for secondary actions -->
+        <VBox minHeight="10.0" />
+
+        <Button fx:id="helpButton" text="⌨ Keyboard Shortcuts" maxWidth="Infinity" minHeight="35.0" onAction="#handleHelp" style="-fx-background-color: #2196F3; -fx-text-fill: white;">
             <font>
-                <Font size="14.0" />
+                <Font size="13.0" />
             </font>
             <tooltip>
                 <Tooltip text="View all available keyboard shortcuts for the app" />
             </tooltip>
         </Button>
 
-        <Button fx:id="exitButton" text="Exit" maxWidth="Infinity" minHeight="40.0" onAction="#handleExit">
+        <Button fx:id="aboutButton" text="ℹ About ShredForge" maxWidth="Infinity" minHeight="35.0" onAction="#handleAbout" style="-fx-background-color: #9C27B0; -fx-text-fill: white;">
             <font>
-                <Font size="14.0" />
+                <Font size="13.0" />
+            </font>
+            <tooltip>
+                <Tooltip text="View app information and credits" />
+            </tooltip>
+        </Button>
+
+        <Button fx:id="exitButton" text="Exit" maxWidth="Infinity" minHeight="35.0" onAction="#handleExit">
+            <font>
+                <Font size="13.0" />
             </font>
             <tooltip>
                 <Tooltip text="Close the application" />
