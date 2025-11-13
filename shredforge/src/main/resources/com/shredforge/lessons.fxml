@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.shredforge.ui.LessonsController"
+            style="-fx-background-color: linear-gradient(to bottom, #0a0a0a, #1a1a2e);">
+
+    <!-- Top: Header -->
+    <top>
+        <VBox spacing="15.0" style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 20;">
+            <!-- Title and Back Button -->
+            <HBox alignment="CENTER_LEFT" spacing="20.0">
+                <Label text="🎓 Guitar Lessons" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #00d9ff;"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="Back to Menu" onAction="#handleBackToMenu" minWidth="120"/>
+            </HBox>
+
+            <!-- Category Selector and Search -->
+            <HBox spacing="20.0" alignment="CENTER_LEFT">
+                <VBox spacing="5.0">
+                    <Label text="Category:" style="-fx-text-fill: white; -fx-font-weight: bold;"/>
+                    <ChoiceBox fx:id="categoryChoiceBox" minWidth="200"/>
+                </VBox>
+
+                <VBox spacing="5.0" HBox.hgrow="ALWAYS">
+                    <Label text="Search Lessons:" style="-fx-text-fill: white; -fx-font-weight: bold;"/>
+                    <TextField fx:id="searchField" promptText="Search by title or description..." minWidth="300"/>
+                </VBox>
+            </HBox>
+
+            <!-- Category Description -->
+            <Label fx:id="categoryDescriptionLabel"
+                   text="Start your guitar journey with fundamental techniques and basic chords"
+                   style="-fx-text-fill: #888; -fx-font-style: italic; -fx-font-size: 14px;"
+                   wrapText="true"/>
+        </VBox>
+    </top>
+
+    <!-- Center: Lessons List -->
+    <center>
+        <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;">
+            <VBox fx:id="lessonsListBox" spacing="15.0">
+                <padding>
+                    <Insets bottom="30.0" left="40.0" right="40.0" top="30.0"/>
+                </padding>
+
+                <!-- Lessons are added dynamically by the controller -->
+            </VBox>
+        </ScrollPane>
+    </center>
+
+    <!-- Bottom: Status Bar -->
+    <bottom>
+        <HBox alignment="CENTER" spacing="20.0" style="-fx-background-color: rgba(15, 52, 96, 0.2); -fx-padding: 15;">
+            <Label text="💡 Tip: Complete lessons in order for the best learning experience"
+                   style="-fx-text-fill: #00ff88; -fx-font-size: 12px; -fx-font-style: italic;"/>
+        </HBox>
+    </bottom>
+</BorderPane>

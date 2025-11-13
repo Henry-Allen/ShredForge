@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.shredforge.ui.PracticeController"
+            style="-fx-background-color: linear-gradient(to bottom, #0a0a0a, #1a1a2e);">
+
+    <!-- Top: Header -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="20.0" style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 20;">
+            <Label text="🥁 Practice Mode" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #00d9ff;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="Back to Menu" onAction="#handleBackToMenu" minWidth="120"/>
+        </HBox>
+    </top>
+
+    <!-- Center: Metronome and Controls -->
+    <center>
+        <VBox spacing="30.0">
+            <padding>
+                <Insets bottom="30.0" left="40.0" right="40.0" top="30.0"/>
+            </padding>
+
+            <!-- Metronome Canvas -->
+            <VBox alignment="CENTER" spacing="20.0"
+                  style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 30; -fx-background-radius: 15; -fx-border-color: rgba(0, 217, 255, 0.2); -fx-border-width: 1.5; -fx-border-radius: 15;">
+                <Label text="Metronome" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+
+                <Canvas fx:id="metronomeCanvas" width="600" height="150" style="-fx-background-color: #0a0a0a;"/>
+
+                <!-- Metronome Controls -->
+                <GridPane hgap="30.0" vgap="15.0" alignment="CENTER">
+                    <columnConstraints>
+                        <ColumnConstraints halignment="RIGHT" minWidth="120"/>
+                        <ColumnConstraints halignment="LEFT" minWidth="250"/>
+                    </columnConstraints>
+
+                    <!-- Tempo Control -->
+                    <Label text="Tempo:" GridPane.columnIndex="0" GridPane.rowIndex="0"
+                           style="-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 16px;"/>
+                    <HBox spacing="15.0" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <Slider fx:id="tempoSlider" min="40" max="240" value="120"
+                                showTickMarks="true" showTickLabels="true" majorTickUnit="50"
+                                minWidth="200"/>
+                        <Label fx:id="tempoLabel" text="120 BPM"
+                               style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #00d9ff; -fx-min-width: 100;"/>
+                    </HBox>
+
+                    <!-- Time Signature -->
+                    <Label text="Time Signature:" GridPane.columnIndex="0" GridPane.rowIndex="1"
+                           style="-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 16px;"/>
+                    <ChoiceBox fx:id="timeSignatureChoice" GridPane.columnIndex="1" GridPane.rowIndex="1" minWidth="150"/>
+
+                    <!-- Sound Toggle -->
+                    <Label text="Click Sound:" GridPane.columnIndex="0" GridPane.rowIndex="2"
+                           style="-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 16px;"/>
+                    <CheckBox fx:id="soundEnabledCheck" text="Enable audio click"
+                              GridPane.columnIndex="1" GridPane.rowIndex="2"
+                              style="-fx-text-fill: white;"/>
+                </GridPane>
+
+                <!-- Playback Controls -->
+                <HBox spacing="20.0" alignment="CENTER">
+                    <Button fx:id="startButton" text="▶ Start" onAction="#handleStart"
+                            minWidth="120" minHeight="40"
+                            style="-fx-background-color: linear-gradient(to right, #00ff88, #00d9ff); -fx-text-fill: #1a1a2e; -fx-font-weight: bold; -fx-font-size: 16px;">
+                        <tooltip>
+                            <Tooltip text="Start the metronome"/>
+                        </tooltip>
+                    </Button>
+
+                    <Button fx:id="stopButton" text="⏹ Stop" onAction="#handleStop"
+                            minWidth="120" minHeight="40" disable="true"
+                            style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px;">
+                        <tooltip>
+                            <Tooltip text="Stop the metronome"/>
+                        </tooltip>
+                    </Button>
+                </HBox>
+
+                <!-- Status Label -->
+                <Label fx:id="statusLabel" text="Ready"
+                       style="-fx-text-fill: #888; -fx-font-size: 14px; -fx-font-style: italic;"/>
+            </VBox>
+
+            <!-- Practice Exercises -->
+            <VBox spacing="15.0"
+                  style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 25; -fx-background-radius: 15; -fx-border-color: rgba(0, 217, 255, 0.2); -fx-border-width: 1.5; -fx-border-radius: 15;">
+                <Label text="Rhythm Exercises" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                <Label text="Practice these fundamental rhythm patterns to improve your timing:"
+                       style="-fx-text-fill: #888; -fx-font-size: 13px; -fx-font-style: italic;"
+                       wrapText="true"/>
+
+                <ScrollPane fitToWidth="true" prefHeight="300" style="-fx-background-color: transparent;">
+                    <VBox fx:id="exercisesBox" spacing="12.0">
+                        <!-- Exercises are added dynamically -->
+                    </VBox>
+                </ScrollPane>
+            </VBox>
+        </VBox>
+    </center>
+
+    <!-- Bottom: Tips -->
+    <bottom>
+        <HBox alignment="CENTER" spacing="20.0" style="-fx-background-color: rgba(15, 52, 96, 0.2); -fx-padding: 15;">
+            <Label text="💡 Tip: Start slow and gradually increase tempo as you become comfortable"
+                   style="-fx-text-fill: #00ff88; -fx-font-size: 12px; -fx-font-style: italic;"/>
+        </HBox>
+    </bottom>
+</BorderPane>

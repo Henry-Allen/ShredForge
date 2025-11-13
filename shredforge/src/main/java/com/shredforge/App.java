@@ -1,11 +1,21 @@
 package com.shredforge;
 
+import javafx.animation.AnimationTimer;
+import javafx.animation.FadeTransition;
+import javafx.animation.ScaleTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+import javafx.util.Duration;
 
 import java.io.IOException;
 import java.util.logging.Level;
@@ -27,9 +37,93 @@ public class App extends Application {
 
     @Override
     public void start(Stage stage) {
-        try {
-            primaryStage = stage;
+        primaryStage = stage;
 
+        // Show splash screen while loading
+        showSplashScreen(stage);
+    }
+
+    /**
+     * Display splash screen with loading animation
+     */
+    private void showSplashScreen(Stage stage) {
+        // Create splash screen
+        VBox splashLayout = new VBox(20);
+        splashLayout.setAlignment(Pos.CENTER);
+        splashLayout.setStyle("-fx-background-color: linear-gradient(to bottom, #0a0a0a, #1a1a2e); -fx-padding: 60;");
+
+        // App title with glow effect
+        Label titleLabel = new Label("ShredForge");
+        titleLabel.setFont(new Font("System Bold", 48));
+        titleLabel.setStyle("-fx-text-fill: #00d9ff; -fx-effect: dropshadow(gaussian, #00d9ff, 20, 0.7, 0, 0);");
+
+        // Subtitle
+        Label subtitleLabel = new Label("Guitar Practice & Training");
+        subtitleLabel.setFont(new Font("System", 18));
+        subtitleLabel.setStyle("-fx-text-fill: #00ff88;");
+
+        // Loading label
+        Label loadingLabel = new Label("Loading...");
+        loadingLabel.setFont(new Font("System", 14));
+        loadingLabel.setStyle("-fx-text-fill: white;");
+
+        // Progress bar with gradient
+        ProgressBar progressBar = new ProgressBar(0);
+        progressBar.setPrefWidth(400);
+        progressBar.setPrefHeight(8);
+
+        splashLayout.getChildren().addAll(titleLabel, subtitleLabel, loadingLabel, progressBar);
+
+        Scene splashScene = new Scene(splashLayout, 600, 400);
+
+        // Apply theme to splash
+        try {
+            String stylesheet = App.class.getResource("modern-theme.css").toExternalForm();
+            splashScene.getStylesheets().add(stylesheet);
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Could not load theme for splash screen", e);
+        }
+
+        stage.initStyle(StageStyle.UNDECORATED);
+        stage.setScene(splashScene);
+        stage.show();
+
+        // Animate title
+        ScaleTransition scaleTransition = new ScaleTransition(Duration.millis(1000), titleLabel);
+        scaleTransition.setFromX(0.5);
+        scaleTransition.setFromY(0.5);
+        scaleTransition.setToX(1.0);
+        scaleTransition.setToY(1.0);
+        scaleTransition.play();
+
+        // Simulate loading with animation
+        new AnimationTimer() {
+            private long startTime = -1;
+            private final long DURATION = 2_000_000_000L; // 2 seconds in nanoseconds
+
+            @Override
+            public void handle(long now) {
+                if (startTime < 0) {
+                    startTime = now;
+                }
+
+                long elapsed = now - startTime;
+                double progress = Math.min(1.0, (double) elapsed / DURATION);
+                progressBar.setProgress(progress);
+
+                if (progress >= 1.0) {
+                    stop();
+                    loadMainApplication(stage);
+                }
+            }
+        }.start();
+    }
+
+    /**
+     * Load the main application after splash screen
+     */
+    private void loadMainApplication(Stage stage) {
+        try {
             // Create demo tabs if needed (first time user)
             com.shredforge.demo.DemoDataGenerator.createDemoTabsIfNeeded();
 
@@ -46,6 +140,7 @@ public class App extends Application {
 
             // Configure the primary stage
             stage.setTitle(APP_TITLE);
+            stage.initStyle(StageStyle.DECORATED);
             stage.setScene(scene);
             stage.setMinWidth(640);
             stage.setMinHeight(480);
@@ -57,6 +152,12 @@ public class App extends Application {
                 Platform.exit();
                 System.exit(0);
             });
+
+            // Fade transition from splash to main
+            FadeTransition fadeIn = new FadeTransition(Duration.millis(500), scene.getRoot());
+            fadeIn.setFromValue(0.0);
+            fadeIn.setToValue(1.0);
+            fadeIn.play();
 
             stage.show();
             LOGGER.info("ShredForge application started successfully");

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.shredforge.ui.TunerController"
+            style="-fx-background-color: linear-gradient(to bottom, #0a0a0a, #1a1a2e);">
+
+    <!-- Top: Header -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="20.0" style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 20;">
+            <Label text="🎸 Guitar Tuner" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #00d9ff;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="Back to Menu" onAction="#handleBackToMenu" minWidth="120"/>
+        </HBox>
+    </top>
+
+    <!-- Center: Tuner Interface -->
+    <center>
+        <VBox spacing="25.0" alignment="TOP_CENTER">
+            <padding>
+                <Insets bottom="30.0" left="40.0" right="40.0" top="30.0"/>
+            </padding>
+
+            <!-- Main Tuner Display -->
+            <VBox alignment="CENTER" spacing="20.0"
+                  style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 40; -fx-background-radius: 15; -fx-border-color: rgba(0, 217, 255, 0.2); -fx-border-width: 1.5; -fx-border-radius: 15;">
+
+                <!-- Detected Note -->
+                <VBox alignment="CENTER" spacing="10.0">
+                    <Label text="Detected Note" style="-fx-text-fill: #888; -fx-font-size: 16px;"/>
+                    <Label fx:id="noteLabel" text="-" style="-fx-font-size: 72px; -fx-font-weight: bold; -fx-text-fill: #00d9ff;"/>
+                </VBox>
+
+                <!-- Frequency Display -->
+                <Label fx:id="frequencyLabel" text="0.0 Hz" style="-fx-font-size: 20px; -fx-text-fill: white;"/>
+
+                <!-- Cents Difference -->
+                <VBox alignment="CENTER" spacing="5.0">
+                    <Label text="Tuning Accuracy" style="-fx-text-fill: #888; -fx-font-size: 14px;"/>
+                    <Label fx:id="centsLabel" text="0¢" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #00d9ff;"/>
+                </VBox>
+
+                <!-- String Detection -->
+                <Label fx:id="stringLabel" text="Play a string" style="-fx-font-size: 18px; -fx-text-fill: #00ff88; -fx-font-weight: bold;"/>
+
+                <!-- Tuning Bar -->
+                <VBox alignment="CENTER" spacing="10.0" minWidth="500">
+                    <HBox spacing="15.0" alignment="CENTER">
+                        <Label text="♭ FLAT" style="-fx-text-fill: #00d9ff; -fx-font-size: 12px; -fx-font-weight: bold;"/>
+                        <ProgressBar fx:id="tuningBar" progress="0.5" prefWidth="400" prefHeight="20"/>
+                        <Label text="SHARP ♯" style="-fx-text-fill: #e94560; -fx-font-size: 12px; -fx-font-weight: bold;"/>
+                    </HBox>
+                </VBox>
+
+                <!-- Visual Tuner Canvas -->
+                <Canvas fx:id="tunerCanvas" width="500" height="150" style="-fx-background-color: #0a0a0a;"/>
+
+                <!-- Control Buttons -->
+                <HBox spacing="20.0" alignment="CENTER">
+                    <Button fx:id="startButton" text="🎤 Start Listening" onAction="#handleStart"
+                            minWidth="150" minHeight="45"
+                            style="-fx-background-color: linear-gradient(to right, #00ff88, #00d9ff); -fx-text-fill: #1a1a2e; -fx-font-weight: bold; -fx-font-size: 16px;">
+                        <tooltip>
+                            <Tooltip text="Start the tuner and listen to microphone input"/>
+                        </tooltip>
+                    </Button>
+
+                    <Button fx:id="stopButton" text="⏹ Stop" onAction="#handleStop"
+                            minWidth="150" minHeight="45" disable="true"
+                            style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px;">
+                        <tooltip>
+                            <Tooltip text="Stop the tuner"/>
+                        </tooltip>
+                    </Button>
+                </HBox>
+
+                <!-- Status Label -->
+                <Label fx:id="statusLabel" text="Ready" style="-fx-text-fill: #888; -fx-font-size: 14px; -fx-font-style: italic;"/>
+            </VBox>
+
+            <!-- Standard Tuning Reference -->
+            <VBox spacing="15.0"
+                  style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 25; -fx-background-radius: 15; -fx-border-color: rgba(0, 217, 255, 0.2); -fx-border-width: 1.5; -fx-border-radius: 15;">
+                <Label text="Standard Guitar Tuning" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+
+                <GridPane hgap="30.0" vgap="12.0" alignment="CENTER">
+                    <columnConstraints>
+                        <ColumnConstraints halignment="CENTER" minWidth="80"/>
+                        <ColumnConstraints halignment="CENTER" minWidth="80"/>
+                        <ColumnConstraints halignment="CENTER" minWidth="80"/>
+                        <ColumnConstraints halignment="CENTER" minWidth="80"/>
+                        <ColumnConstraints halignment="CENTER" minWidth="80"/>
+                        <ColumnConstraints halignment="CENTER" minWidth="80"/>
+                    </columnConstraints>
+
+                    <!-- String Numbers -->
+                    <Label text="String 1" GridPane.columnIndex="0" GridPane.rowIndex="0"
+                           style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+                    <Label text="String 2" GridPane.columnIndex="1" GridPane.rowIndex="0"
+                           style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+                    <Label text="String 3" GridPane.columnIndex="2" GridPane.rowIndex="0"
+                           style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+                    <Label text="String 4" GridPane.columnIndex="3" GridPane.rowIndex="0"
+                           style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+                    <Label text="String 5" GridPane.columnIndex="4" GridPane.rowIndex="0"
+                           style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+                    <Label text="String 6" GridPane.columnIndex="5" GridPane.rowIndex="0"
+                           style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+
+                    <!-- Note Names -->
+                    <Label text="E4" GridPane.columnIndex="0" GridPane.rowIndex="1"
+                           style="-fx-text-fill: #00d9ff; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                    <Label text="B3" GridPane.columnIndex="1" GridPane.rowIndex="1"
+                           style="-fx-text-fill: #00d9ff; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                    <Label text="G3" GridPane.columnIndex="2" GridPane.rowIndex="1"
+                           style="-fx-text-fill: #00d9ff; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                    <Label text="D3" GridPane.columnIndex="3" GridPane.rowIndex="1"
+                           style="-fx-text-fill: #00d9ff; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                    <Label text="A2" GridPane.columnIndex="4" GridPane.rowIndex="1"
+                           style="-fx-text-fill: #00d9ff; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                    <Label text="E2" GridPane.columnIndex="5" GridPane.rowIndex="1"
+                           style="-fx-text-fill: #00d9ff; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+
+                    <!-- Frequencies -->
+                    <Label text="329.6 Hz" GridPane.columnIndex="0" GridPane.rowIndex="2"
+                           style="-fx-text-fill: #888; -fx-font-size: 11px;"/>
+                    <Label text="246.9 Hz" GridPane.columnIndex="1" GridPane.rowIndex="2"
+                           style="-fx-text-fill: #888; -fx-font-size: 11px;"/>
+                    <Label text="196.0 Hz" GridPane.columnIndex="2" GridPane.rowIndex="2"
+                           style="-fx-text-fill: #888; -fx-font-size: 11px;"/>
+                    <Label text="146.8 Hz" GridPane.columnIndex="3" GridPane.rowIndex="2"
+                           style="-fx-text-fill: #888; -fx-font-size: 11px;"/>
+                    <Label text="110.0 Hz" GridPane.columnIndex="4" GridPane.rowIndex="2"
+                           style="-fx-text-fill: #888; -fx-font-size: 11px;"/>
+                    <Label text="82.4 Hz" GridPane.columnIndex="5" GridPane.rowIndex="2"
+                           style="-fx-text-fill: #888; -fx-font-size: 11px;"/>
+                </GridPane>
+            </VBox>
+        </VBox>
+    </center>
+
+    <!-- Bottom: Instructions -->
+    <bottom>
+        <HBox alignment="CENTER" spacing="20.0" style="-fx-background-color: rgba(15, 52, 96, 0.2); -fx-padding: 15;">
+            <Label text="💡 Tip: Play one string at a time and adjust tuning until the indicator is centered (green)"
+                   style="-fx-text-fill: #00ff88; -fx-font-size: 12px; -fx-font-style: italic;"/>
+        </HBox>
+    </bottom>
+</BorderPane>

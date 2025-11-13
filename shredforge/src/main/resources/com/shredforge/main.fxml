@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.shredforge.ui.MainController"
+            style="-fx-background-color: linear-gradient(to bottom, #0a0a0a, #1a1a2e);">
+
+    <!-- Top: Header -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="20.0" style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 20;">
+            <Label text="🎸 ShredForge Dashboard" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #00d9ff;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="Settings" onAction="#handleSettings" fx:id="settingsButton" minWidth="100"/>
+            <Button text="Back to Menu" onAction="#handleBackToMenu" minWidth="120"/>
+        </HBox>
+    </top>
+
+    <!-- Center: Dashboard Content -->
+    <center>
+        <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;">
+            <VBox spacing="25.0">
+                <padding>
+                    <Insets bottom="30.0" left="40.0" right="40.0" top="30.0"/>
+                </padding>
+
+                <!-- Statistics Cards Row -->
+                <GridPane hgap="20.0" vgap="20.0">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="25"/>
+                        <ColumnConstraints percentWidth="25"/>
+                        <ColumnConstraints percentWidth="25"/>
+                        <ColumnConstraints percentWidth="25"/>
+                    </columnConstraints>
+
+                    <!-- Total Tabs Card -->
+                    <VBox alignment="CENTER" spacing="10.0" GridPane.columnIndex="0"
+                          style="-fx-background-color: rgba(0, 217, 255, 0.15); -fx-padding: 25; -fx-background-radius: 15; -fx-border-color: rgba(0, 217, 255, 0.3); -fx-border-width: 1.5; -fx-border-radius: 15;">
+                        <Label text="Total Tabs" style="-fx-font-weight: bold; -fx-text-fill: #888; -fx-font-size: 14px;"/>
+                        <Label fx:id="totalTabsLabel" text="0" style="-fx-font-size: 36px; -fx-font-weight: bold; -fx-text-fill: #00d9ff;"/>
+                    </VBox>
+
+                    <!-- Practice Time Card -->
+                    <VBox alignment="CENTER" spacing="10.0" GridPane.columnIndex="1"
+                          style="-fx-background-color: rgba(0, 255, 136, 0.15); -fx-padding: 25; -fx-background-radius: 15; -fx-border-color: rgba(0, 255, 136, 0.3); -fx-border-width: 1.5; -fx-border-radius: 15;">
+                        <Label text="Practice Time" style="-fx-font-weight: bold; -fx-text-fill: #888; -fx-font-size: 14px;"/>
+                        <Label fx:id="totalPracticeTimeLabel" text="0h 0m" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #00ff88;"/>
+                    </VBox>
+
+                    <!-- Average Score Card -->
+                    <VBox alignment="CENTER" spacing="10.0" GridPane.columnIndex="2"
+                          style="-fx-background-color: rgba(233, 69, 96, 0.15); -fx-padding: 25; -fx-background-radius: 15; -fx-border-color: rgba(233, 69, 96, 0.3); -fx-border-width: 1.5; -fx-border-radius: 15;">
+                        <Label text="Avg Score" style="-fx-font-weight: bold; -fx-text-fill: #888; -fx-font-size: 14px;"/>
+                        <Label fx:id="averageScoreLabel" text="0.0%" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #e94560;"/>
+                    </VBox>
+
+                    <!-- Current Streak Card -->
+                    <VBox alignment="CENTER" spacing="10.0" GridPane.columnIndex="3"
+                          style="-fx-background-color: rgba(255, 170, 0, 0.15); -fx-padding: 25; -fx-background-radius: 15; -fx-border-color: rgba(255, 170, 0, 0.3); -fx-border-width: 1.5; -fx-border-radius: 15;">
+                        <Label text="🔥 Streak" style="-fx-font-weight: bold; -fx-text-fill: #888; -fx-font-size: 14px;"/>
+                        <Label fx:id="currentStreakLabel" text="0 days" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #ffaa00;"/>
+                    </VBox>
+                </GridPane>
+
+                <!-- Quick Actions Section -->
+                <VBox spacing="15.0" style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 25; -fx-background-radius: 15; -fx-border-color: rgba(0, 217, 255, 0.2); -fx-border-width: 1.5; -fx-border-radius: 15;">
+                    <Label text="Quick Actions" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+
+                    <GridPane hgap="15.0" vgap="15.0">
+                        <columnConstraints>
+                            <ColumnConstraints percentWidth="33"/>
+                            <ColumnConstraints percentWidth="33"/>
+                            <ColumnConstraints percentWidth="33"/>
+                        </columnConstraints>
+
+                        <Button text="🎵 Start Practice" onAction="#handleStartPractice"
+                                maxWidth="Infinity" minHeight="60" GridPane.columnIndex="0"
+                                fx:id="startPracticeButton"
+                                style="-fx-font-size: 16px; -fx-font-weight: bold;">
+                            <tooltip>
+                                <Tooltip text="Begin a practice session"/>
+                            </tooltip>
+                        </Button>
+
+                        <Button text="📚 Browse Tabs" onAction="#handleBrowseTabs"
+                                maxWidth="Infinity" minHeight="60" GridPane.columnIndex="1"
+                                fx:id="searchTabsButton"
+                                style="-fx-font-size: 16px; -fx-font-weight: bold;">
+                            <tooltip>
+                                <Tooltip text="Search and download new tabs"/>
+                            </tooltip>
+                        </Button>
+
+                        <Button text="🎓 View Lessons" onAction="#handleViewLessons"
+                                maxWidth="Infinity" minHeight="60" GridPane.columnIndex="2"
+                                style="-fx-font-size: 16px; -fx-font-weight: bold;">
+                            <tooltip>
+                                <Tooltip text="Learn with structured lessons"/>
+                            </tooltip>
+                        </Button>
+
+                        <Button text="🎸 My Tabs" onAction="#handleMyTabs"
+                                maxWidth="Infinity" minHeight="60" GridPane.columnIndex="0" GridPane.rowIndex="1"
+                                fx:id="myTabsButton"
+                                style="-fx-font-size: 16px; -fx-font-weight: bold;">
+                            <tooltip>
+                                <Tooltip text="View your saved tabs"/>
+                            </tooltip>
+                        </Button>
+
+                        <Button text="🎹 Tuner" onAction="#handleOpenTuner"
+                                maxWidth="Infinity" minHeight="60" GridPane.columnIndex="1" GridPane.rowIndex="1"
+                                style="-fx-font-size: 16px; -fx-font-weight: bold;">
+                            <tooltip>
+                                <Tooltip text="Tune your guitar"/>
+                            </tooltip>
+                        </Button>
+
+                        <Button text="⚙️ Settings" onAction="#handleSettings"
+                                maxWidth="Infinity" minHeight="60" GridPane.columnIndex="2" GridPane.rowIndex="1"
+                                style="-fx-font-size: 16px; -fx-font-weight: bold;">
+                            <tooltip>
+                                <Tooltip text="Configure application settings"/>
+                            </tooltip>
+                        </Button>
+                    </GridPane>
+                </VBox>
+
+                <!-- Recent Sessions Section -->
+                <VBox spacing="15.0" style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 25; -fx-background-radius: 15; -fx-border-color: rgba(0, 217, 255, 0.2); -fx-border-width: 1.5; -fx-border-radius: 15;">
+                    <Label text="Recent Practice Sessions" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                    <VBox fx:id="recentSessionsBox" spacing="10.0">
+                        <Label text="No recent sessions yet" style="-fx-text-fill: #888; -fx-font-style: italic;"/>
+                    </VBox>
+                </VBox>
+
+                <!-- Achievements Section -->
+                <VBox spacing="15.0" style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 25; -fx-background-radius: 15; -fx-border-color: rgba(0, 217, 255, 0.2); -fx-border-width: 1.5; -fx-border-radius: 15;">
+                    <Label text="Achievements" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                    <HBox fx:id="achievementsBox" spacing="15.0">
+                        <Label text="Start practicing to earn achievements!" style="-fx-text-fill: #888; -fx-font-style: italic;"/>
+                    </HBox>
+                </VBox>
+
+                <!-- Skill Level Section -->
+                <VBox spacing="10.0" alignment="CENTER" style="-fx-background-color: linear-gradient(to bottom right, rgba(0, 217, 255, 0.1), rgba(233, 69, 96, 0.1)); -fx-padding: 20; -fx-background-radius: 15; -fx-border-color: rgba(0, 217, 255, 0.25); -fx-border-width: 1.5; -fx-border-radius: 15;">
+                    <Label text="Current Skill Level" style="-fx-font-weight: bold; -fx-text-fill: #888; -fx-font-size: 14px;"/>
+                    <Label fx:id="skillLevelLabel" text="Beginner" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #00d9ff;"/>
+                    <ProgressBar progress="0.0" prefWidth="400" prefHeight="10"/>
+                </VBox>
+            </VBox>
+        </ScrollPane>
+    </center>
+</BorderPane>

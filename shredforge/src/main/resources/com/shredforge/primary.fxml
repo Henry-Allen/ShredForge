@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.shredforge.ui.PrimaryController"
+            style="-fx-background-color: linear-gradient(to bottom, #0a0a0a, #1a1a2e);">
+
+    <!-- Top: Header -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="20.0" style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 20;">
+            <Label text="🎼 Tab Player" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #00d9ff;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="Back to Menu" onAction="#handleBackToMenu" minWidth="120"/>
+        </HBox>
+    </top>
+
+    <!-- Center: Split view with tab list and player -->
+    <center>
+        <SplitPane dividerPositions="0.25" style="-fx-background-color: transparent;">
+            <!-- Left: Tab List -->
+            <VBox spacing="10.0" style="-fx-background-color: transparent;">
+                <padding>
+                    <Insets bottom="20.0" left="20.0" right="10.0" top="20.0"/>
+                </padding>
+
+                <Label text="Available Tabs" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+
+                <ListView fx:id="tabListView" VBox.vgrow="ALWAYS"
+                          style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-border-color: rgba(0, 217, 255, 0.2); -fx-border-width: 1.5; -fx-border-radius: 10; -fx-background-radius: 10;"/>
+            </VBox>
+
+            <!-- Right: Tab Player -->
+            <VBox spacing="20.0" style="-fx-background-color: transparent;">
+                <padding>
+                    <Insets bottom="20.0" left="10.0" right="20.0" top="20.0"/>
+                </padding>
+
+                <!-- Current Tab Info -->
+                <VBox spacing="8.0" alignment="CENTER"
+                      style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 15; -fx-background-radius: 10; -fx-border-color: rgba(0, 217, 255, 0.2); -fx-border-width: 1.5; -fx-border-radius: 10;">
+                    <Label text="Now Playing:" style="-fx-text-fill: #888; -fx-font-size: 12px;"/>
+                    <Label fx:id="currentTabLabel" text="No tab selected"
+                           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #00d9ff;"/>
+                </VBox>
+
+                <!-- Tab Canvas -->
+                <VBox alignment="CENTER" VBox.vgrow="ALWAYS"
+                      style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 20; -fx-background-radius: 15; -fx-border-color: rgba(0, 217, 255, 0.2); -fx-border-width: 1.5; -fx-border-radius: 15;">
+                    <Canvas fx:id="tabCanvas" width="700" height="300"
+                            style="-fx-background-color: #0a0a0a;"/>
+                </VBox>
+
+                <!-- Playback Controls -->
+                <VBox spacing="15.0"
+                      style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 20; -fx-background-radius: 10; -fx-border-color: rgba(0, 217, 255, 0.2); -fx-border-width: 1.5; -fx-border-radius: 10;">
+
+                    <!-- Speed Control -->
+                    <HBox spacing="15.0" alignment="CENTER">
+                        <Label text="Speed:" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;"/>
+                        <Slider fx:id="speedSlider" min="25" max="200" value="100"
+                                showTickMarks="true" showTickLabels="true" majorTickUnit="50"
+                                minWidth="250"/>
+                        <Label fx:id="speedLabel" text="100%"
+                               style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #00d9ff; -fx-min-width: 60;"/>
+                    </HBox>
+
+                    <!-- Playback Buttons -->
+                    <HBox spacing="15.0" alignment="CENTER">
+                        <Button fx:id="playButton" text="▶ Play" onAction="#handlePlay"
+                                minWidth="120" minHeight="40"
+                                style="-fx-background-color: linear-gradient(to right, #00ff88, #00d9ff); -fx-text-fill: #1a1a2e; -fx-font-weight: bold; -fx-font-size: 16px;">
+                            <tooltip>
+                                <Tooltip text="Start playback"/>
+                            </tooltip>
+                        </Button>
+
+                        <Button fx:id="pauseButton" text="⏸ Pause" onAction="#handlePause"
+                                minWidth="120" minHeight="40" disable="true"
+                                style="-fx-background-color: #ffaa00; -fx-text-fill: #1a1a2e; -fx-font-weight: bold; -fx-font-size: 16px;">
+                            <tooltip>
+                                <Tooltip text="Pause playback"/>
+                            </tooltip>
+                        </Button>
+
+                        <Button fx:id="stopButton" text="⏹ Stop" onAction="#handleStop"
+                                minWidth="120" minHeight="40" disable="true"
+                                style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px;">
+                            <tooltip>
+                                <Tooltip text="Stop playback"/>
+                            </tooltip>
+                        </Button>
+                    </HBox>
+
+                    <!-- Status Label -->
+                    <Label fx:id="statusLabel" text="Ready" alignment="CENTER"
+                           style="-fx-text-fill: #888; -fx-font-size: 14px; -fx-font-style: italic;"/>
+                </VBox>
+            </VBox>
+        </SplitPane>
+    </center>
+
+    <!-- Bottom: Tips -->
+    <bottom>
+        <HBox alignment="CENTER" spacing="20.0" style="-fx-background-color: rgba(15, 52, 96, 0.2); -fx-padding: 15;">
+            <Label text="💡 Tip: Select a tab from the list to start practicing"
+                   style="-fx-text-fill: #00ff88; -fx-font-size: 12px; -fx-font-style: italic;"/>
+        </HBox>
+    </bottom>
+</BorderPane>
