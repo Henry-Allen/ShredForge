@@ -26,7 +26,22 @@
     </Label>
 
     <!-- Spacer -->
-    <VBox minHeight="30.0" />
+    <VBox minHeight="20.0" />
+
+    <!-- Recent Tabs Section -->
+    <VBox fx:id="recentTabsContainer" alignment="CENTER" spacing="10.0" maxWidth="500.0" style="-fx-background-color: #f5f5f5; -fx-padding: 15; -fx-background-radius: 10;">
+        <Label text="🎸 Continue Practicing" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
+        <Label fx:id="recentTabsHintLabel" text="Your recently practiced tabs will appear here" style="-fx-font-size: 11px; -fx-font-style: italic;" />
+        <VBox fx:id="recentTabsList" spacing="5.0" maxWidth="Infinity" />
+        <Button fx:id="quickPracticeButton" text="Quick Practice - Resume Last Session" onAction="#handleQuickPractice" visible="false" maxWidth="Infinity" style="-fx-background-color: #4CAF50; -fx-text-fill: white;">
+            <font>
+                <Font size="13.0" />
+            </font>
+        </Button>
+    </VBox>
+
+    <!-- Spacer -->
+    <VBox minHeight="20.0" />
 
     <!-- Main Menu Buttons -->
     <VBox alignment="CENTER" spacing="15.0" maxWidth="400.0">
@@ -51,6 +66,12 @@
         <Button fx:id="settingsButton" text="Settings" maxWidth="Infinity" minHeight="50.0" onAction="#handleSettings">
             <font>
                 <Font size="16.0" />
+            </font>
+        </Button>
+
+        <Button fx:id="helpButton" text="⌨ Keyboard Shortcuts" maxWidth="Infinity" minHeight="40.0" onAction="#handleHelp" style="-fx-background-color: #2196F3; -fx-text-fill: white;">
+            <font>
+                <Font size="14.0" />
             </font>
         </Button>
 

@@ -39,6 +39,9 @@ public class SettingsController {
     private CheckBox showTimingErrorsCheckbox;
 
     @FXML
+    private ChoiceBox<String> themeChoice;
+
+    @FXML
     private Button testAudioButton;
 
     @FXML
@@ -101,6 +104,14 @@ public class SettingsController {
 
         if (showTimingErrorsCheckbox != null) {
             showTimingErrorsCheckbox.setSelected(true);
+        }
+
+        // Set up theme choice
+        if (themeChoice != null) {
+            themeChoice.setItems(FXCollections.observableArrayList("Light", "Dark"));
+            String currentTheme = repository.getTheme();
+            themeChoice.setValue("dark".equals(currentTheme) ? "Dark" : "Light");
+            LOGGER.info("Current theme: " + currentTheme);
         }
 
         // Load current settings
@@ -235,26 +246,27 @@ public class SettingsController {
                 LOGGER.info("Volume set to: " + volume);
             }
 
+            // Save theme
+            if (themeChoice != null && themeChoice.getValue() != null) {
+                String theme = "Dark".equals(themeChoice.getValue()) ? "dark" : "light";
+                repository.setTheme(theme);
+                LOGGER.info("Theme set to: " + theme);
+            }
+
             // Update display
             updateCurrentDevice();
             showStatus("Settings saved successfully!");
 
             // Show confirmation
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Settings Saved");
-            alert.setHeaderText(null);
-            alert.setContentText("Your settings have been saved.\n\nChanges will take effect on next session.");
-            alert.showAndWait();
+            DialogHelper.showSuccess("Settings Saved",
+                "Your settings have been saved.\n\n" +
+                "Note: Theme changes will apply on next app start.");
 
         } catch (Exception e) {
             LOGGER.severe("Failed to save settings: " + e.getMessage());
             showStatus("Failed to save settings");
-
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Save Failed");
-            alert.setHeaderText("Failed to save settings");
-            alert.setContentText(e.getMessage());
-            alert.showAndWait();
+            DialogHelper.showError("Save Failed",
+                "Failed to save settings: " + e.getMessage());
         }
     }
 

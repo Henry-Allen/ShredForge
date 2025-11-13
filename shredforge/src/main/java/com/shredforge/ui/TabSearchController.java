@@ -106,7 +106,7 @@ public class TabSearchController {
         String query = searchField.getText();
 
         if (query == null || query.trim().isEmpty()) {
-            showStatus("Please enter a search query");
+            DialogHelper.showError("Search Required", "Please enter a search query to find tabs.");
             return;
         }
 
@@ -116,6 +116,14 @@ public class TabSearchController {
         if (loadingIndicator != null) {
             loadingIndicator.setVisible(true);
         }
+
+        // Create loading dialog
+        LoadingIndicator loader = new LoadingIndicator(
+            "Searching Tabs",
+            "Searching for \"" + query + "\"...",
+            true
+        );
+        loader.show();
 
         // Perform search in background thread
         new Thread(() -> {
@@ -138,8 +146,18 @@ public class TabSearchController {
                         loadingIndicator.setVisible(false);
                     }
 
-                    showStatus("Found " + results.size() + " tabs");
-                    LOGGER.info("Search complete: " + results.size() + " results");
+                    loader.hide();
+
+                    if (results.isEmpty()) {
+                        showStatus("No tabs found");
+                        DialogHelper.showInfo(
+                            "No Results",
+                            "No tabs found for \"" + query + "\".\n\nTry a different search term or artist name."
+                        );
+                    } else {
+                        showStatus("Found " + results.size() + " tabs");
+                        LOGGER.info("Search complete: " + results.size() + " results");
+                    }
                 });
 
             } catch (Exception e) {
@@ -148,7 +166,13 @@ public class TabSearchController {
                     if (loadingIndicator != null) {
                         loadingIndicator.setVisible(false);
                     }
-                    showStatus("Search failed: " + e.getMessage());
+                    loader.hide();
+                    showStatus("Search failed");
+                    DialogHelper.showErrorWithSuggestion(
+                        "Search Failed",
+                        "Could not search for tabs.",
+                        "Check your internet connection and try again."
+                    );
                 });
             }
         }).start();
@@ -159,7 +183,10 @@ public class TabSearchController {
         Tab selectedTab = resultsTable.getSelectionModel().getSelectedItem();
 
         if (selectedTab == null) {
-            showStatus("Please select a tab to download");
+            DialogHelper.showError(
+                "No Tab Selected",
+                "Please select a tab from the search results to download."
+            );
             return;
         }
 
@@ -170,29 +197,46 @@ public class TabSearchController {
             loadingIndicator.setVisible(true);
         }
 
+        // Create loading dialog with progress bar
+        LoadingIndicator loader = new LoadingIndicator(
+            "Downloading Tab",
+            "Downloading \"" + selectedTab.getTitle() + "\" by " + selectedTab.getArtist(),
+            false
+        );
+        loader.show();
+
         // Download in background thread
         new Thread(() -> {
             try {
+                // Simulate progress updates
+                Platform.runLater(() -> loader.updateProgress(0.3));
                 Tab downloadedTab = tabManager.downloadTab(selectedTab);
+                Platform.runLater(() -> loader.updateProgress(0.8));
 
                 Platform.runLater(() -> {
                     if (loadingIndicator != null) {
                         loadingIndicator.setVisible(false);
                     }
 
+                    loader.updateProgress(1.0);
+                    loader.hide();
+
                     if (downloadedTab != null) {
                         showStatus("Downloaded: " + downloadedTab.getTitle());
                         LOGGER.info("Tab downloaded successfully");
 
-                        // Show confirmation
-                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                        alert.setTitle("Download Complete");
-                        alert.setHeaderText(null);
-                        alert.setContentText("Tab downloaded successfully!\n\n" +
-                                           "You can now practice this tab.");
-                        alert.showAndWait();
+                        // Show confirmation with DialogHelper
+                        DialogHelper.showSuccess(
+                            "Download Complete",
+                            "\"" + downloadedTab.getTitle() + "\" downloaded successfully!\n\n" +
+                            "You can now find it in 'My Tabs' and start practicing."
+                        );
                     } else {
                         showStatus("Download failed");
+                        DialogHelper.showError(
+                            "Download Failed",
+                            "Could not download the selected tab.\n\nPlease try again."
+                        );
                     }
                 });
 
@@ -202,7 +246,13 @@ public class TabSearchController {
                     if (loadingIndicator != null) {
                         loadingIndicator.setVisible(false);
                     }
-                    showStatus("Download failed: " + e.getMessage());
+                    loader.hide();
+                    showStatus("Download failed");
+                    DialogHelper.showErrorWithSuggestion(
+                        "Download Failed",
+                        "Could not download the tab.",
+                        "Check your internet connection and try again."
+                    );
                 });
             }
         }).start();

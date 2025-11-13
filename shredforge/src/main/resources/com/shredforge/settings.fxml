@@ -70,6 +70,12 @@
 
             <CheckBox fx:id="autoScrollCheckbox" text="Auto-scroll tablature during playback" selected="true" />
             <CheckBox fx:id="showTimingErrorsCheckbox" text="Show timing error feedback" selected="true" />
+
+            <!-- Theme Selection -->
+            <HBox alignment="CENTER_LEFT" spacing="15.0">
+                <Label text="Theme:" minWidth="150.0" />
+                <ChoiceBox fx:id="themeChoice" minWidth="150.0" />
+            </HBox>
         </VBox>
 
     </VBox>
