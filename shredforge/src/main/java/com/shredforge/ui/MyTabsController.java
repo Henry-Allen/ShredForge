@@ -11,7 +11,6 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
@@ -120,11 +119,30 @@ public class MyTabsController {
         Tab selectedTab = tabsTable.getSelectionModel().getSelectedItem();
 
         if (selectedTab == null) {
-            showStatus("Please select a tab to practice");
+            DialogHelper.showError("No Tab Selected", "Please select a tab from the list to practice.");
             return;
         }
 
         LOGGER.info("Starting practice with tab: " + selectedTab.getTitle());
+
+        // Check if calibrated
+        if (!repository.isCalibrated()) {
+            boolean proceed = DialogHelper.showConfirmation(
+                "Calibration Required",
+                "Your guitar input hasn't been calibrated yet.\n\n" +
+                "Would you like to calibrate now? (Recommended for best accuracy)"
+            );
+
+            if (proceed) {
+                try {
+                    App.setRoot("calibration");
+                } catch (Exception e) {
+                    LOGGER.severe("Failed to navigate to calibration: " + e.getMessage());
+                    DialogHelper.showError("Navigation Error", "Could not open calibration screen.");
+                }
+                return;
+            }
+        }
 
         // Set as current tab in repository
         repository.setCurrentTab(selectedTab);
@@ -134,7 +152,7 @@ public class MyTabsController {
             App.setRoot("practicesession");
         } catch (Exception e) {
             LOGGER.severe("Failed to start practice session: " + e.getMessage());
-            showStatus("Error starting practice session");
+            DialogHelper.showError("Practice Error", "Could not start practice session.\n\nPlease try again.");
         }
     }
 
@@ -143,18 +161,18 @@ public class MyTabsController {
         Tab selectedTab = tabsTable.getSelectionModel().getSelectedItem();
 
         if (selectedTab == null) {
-            showStatus("Please select a tab to delete");
+            DialogHelper.showError("No Tab Selected", "Please select a tab from the list to delete.");
             return;
         }
 
         // Confirm deletion
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Delete Tab");
-        alert.setHeaderText("Delete " + selectedTab.getTitle() + "?");
-        alert.setContentText("This will permanently delete this tab from your library.");
+        boolean confirmed = DialogHelper.showConfirmation(
+            "Delete Tab",
+            "Are you sure you want to delete \"" + selectedTab.getTitle() + "\"?\n\n" +
+            "This will permanently remove it from your library."
+        );
 
-        Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
+        if (confirmed) {
             // Delete the tab
             boolean deleted = tabManager.deleteTab(selectedTab.getId());
 
@@ -166,8 +184,10 @@ public class MyTabsController {
                 if (tabCountLabel != null) {
                     tabCountLabel.setText("Total Tabs: " + tabs.size());
                 }
+
+                DialogHelper.showSuccess("Tab Deleted", "\"" + selectedTab.getTitle() + "\" has been removed from your library.");
             } else {
-                showStatus("Failed to delete tab");
+                DialogHelper.showError("Delete Failed", "Could not delete the tab.\n\nPlease try again.");
             }
         }
     }
