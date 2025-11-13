@@ -1,0 +1,209 @@
+/* ShredForge Dark Theme */
+
+/* Root colors */
+.root {
+    -fx-base: #2b2b2b;
+    -fx-background: #1e1e1e;
+    -fx-control-inner-background: #3c3c3c;
+    -fx-accent: #4CAF50;
+    -fx-default-button: #4CAF50;
+    -fx-focus-color: #4CAF50;
+    -fx-faint-focus-color: #4CAF5022;
+}
+
+/* Text colors */
+.label, .text {
+    -fx-text-fill: #e0e0e0;
+}
+
+.label:disabled {
+    -fx-opacity: 0.5;
+}
+
+/* Buttons */
+.button {
+    -fx-background-color: #3c3c3c;
+    -fx-text-fill: #e0e0e0;
+    -fx-border-color: #555555;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+}
+
+.button:hover {
+    -fx-background-color: #4a4a4a;
+    -fx-border-color: #4CAF50;
+}
+
+.button:pressed {
+    -fx-background-color: #2a2a2a;
+}
+
+.button:focused {
+    -fx-border-color: #4CAF50;
+    -fx-border-width: 2px;
+}
+
+/* Primary/accent buttons */
+.button.primary {
+    -fx-background-color: #4CAF50;
+    -fx-text-fill: white;
+}
+
+.button.primary:hover {
+    -fx-background-color: #5CBF60;
+}
+
+.button.primary:pressed {
+    -fx-background-color: #3C9F40;
+}
+
+/* Text fields */
+.text-field {
+    -fx-background-color: #3c3c3c;
+    -fx-text-fill: #e0e0e0;
+    -fx-prompt-text-fill: #888888;
+    -fx-border-color: #555555;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+}
+
+.text-field:focused {
+    -fx-border-color: #4CAF50;
+    -fx-border-width: 2px;
+}
+
+/* Table view */
+.table-view {
+    -fx-background-color: #2b2b2b;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #3c3c3c;
+}
+
+.table-view .column-header {
+    -fx-background-color: #3c3c3c;
+    -fx-text-fill: #e0e0e0;
+}
+
+.table-view .table-cell {
+    -fx-text-fill: #e0e0e0;
+    -fx-border-color: #555555;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #4a4a4a;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #4CAF50;
+    -fx-text-fill: white;
+}
+
+/* Choice box / Combo box */
+.choice-box, .combo-box {
+    -fx-background-color: #3c3c3c;
+    -fx-text-fill: #e0e0e0;
+}
+
+.choice-box .label, .combo-box .label {
+    -fx-text-fill: #e0e0e0;
+}
+
+/* Sliders */
+.slider .track {
+    -fx-background-color: #555555;
+}
+
+.slider .thumb {
+    -fx-background-color: #4CAF50;
+}
+
+/* Progress bar */
+.progress-bar .track {
+    -fx-background-color: #555555;
+}
+
+.progress-bar .bar {
+    -fx-background-color: #4CAF50;
+}
+
+/* Check boxes */
+.check-box .box {
+    -fx-background-color: #3c3c3c;
+    -fx-border-color: #555555;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: #4CAF50;
+}
+
+.check-box .text {
+    -fx-fill: #e0e0e0;
+}
+
+/* Scroll pane */
+.scroll-pane {
+    -fx-background-color: #2b2b2b;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #555555;
+}
+
+.scroll-bar .track {
+    -fx-background-color: #3c3c3c;
+}
+
+/* Titled pane */
+.titled-pane > .title {
+    -fx-background-color: #3c3c3c;
+    -fx-text-fill: #e0e0e0;
+}
+
+.titled-pane > .content {
+    -fx-background-color: #2b2b2b;
+}
+
+/* Menu bar */
+.menu-bar {
+    -fx-background-color: #3c3c3c;
+}
+
+.menu-bar .label {
+    -fx-text-fill: #e0e0e0;
+}
+
+.menu-item {
+    -fx-background-color: #3c3c3c;
+}
+
+.menu-item .label {
+    -fx-text-fill: #e0e0e0;
+}
+
+.menu-item:hover {
+    -fx-background-color: #4a4a4a;
+}
+
+/* Tooltips */
+.tooltip {
+    -fx-background-color: #3c3c3c;
+    -fx-text-fill: #e0e0e0;
+    -fx-border-color: #4CAF50;
+}
+
+/* Canvas (for tab display) */
+.canvas {
+    -fx-background-color: #2b2b2b;
+}
+
+/* Separator */
+.separator .line {
+    -fx-background-color: #555555;
+}
+
+/* Context menu */
+.context-menu {
+    -fx-background-color: #3c3c3c;
+}

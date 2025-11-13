@@ -376,6 +376,9 @@ public class DataPersistence {
         public float detectionSensitivity = 0.6f;
         public boolean autoScroll = true;
         public boolean showTimingErrors = true;
+        public String theme = "light"; // "light" or "dark"
+        public java.util.List<String> recentTabs = new java.util.ArrayList<>();
+        public String lastPracticedTab = null;
 
         public AppSettings() {
         }

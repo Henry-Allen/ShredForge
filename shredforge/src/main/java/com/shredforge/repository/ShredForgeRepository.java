@@ -2,6 +2,7 @@ package com.shredforge.repository;
 
 import com.shredforge.model.*;
 import com.shredforge.persistence.DataPersistence;
+import com.shredforge.util.RecentTabsTracker;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
@@ -26,14 +27,17 @@ public class ShredForgeRepository {
     private String audioInputDevice;
     private boolean isCalibrated;
     private float masterVolume;
+    private String theme;
 
-    // Persistence
+    // Persistence and utilities
     private final DataPersistence persistence;
+    private final RecentTabsTracker recentTabsTracker;
 
     private ShredForgeRepository() {
         this.tabs = new ConcurrentHashMap<>();
         this.sessions = new ConcurrentHashMap<>();
         this.persistence = new DataPersistence();
+        this.recentTabsTracker = new RecentTabsTracker();
 
         // Load persisted data
         loadPersistedData();
@@ -60,7 +64,15 @@ public class ShredForgeRepository {
         DataPersistence.AppSettings settings = persistence.loadSettings();
         this.audioInputDevice = settings.audioInputDevice;
         this.masterVolume = settings.masterVolume;
-        LOGGER.info("Loaded settings from disk");
+        this.theme = settings.theme != null ? settings.theme : "light";
+
+        // Load recent tabs
+        if (settings.recentTabs != null && !settings.recentTabs.isEmpty()) {
+            this.recentTabsTracker.loadFromList(settings.recentTabs);
+            LOGGER.info("Loaded " + settings.recentTabs.size() + " recent tabs from settings");
+        }
+
+        LOGGER.info("Loaded settings from disk (theme: " + this.theme + ")");
 
         this.currentSession = null;
         this.currentTab = null;
@@ -143,6 +155,11 @@ public class ShredForgeRepository {
         sessions.put(sessionId, session);
         currentSession = session;
         currentTab = tab;
+
+        // Track this tab in recent history
+        recentTabsTracker.addTab(tab.getId());
+        saveSettings(); // Save recent tabs to disk
+
         LOGGER.info("Session created for tab: " + tab.getTitle());
         return session;
     }
@@ -259,6 +276,11 @@ public class ShredForgeRepository {
         DataPersistence.AppSettings settings = new DataPersistence.AppSettings();
         settings.audioInputDevice = this.audioInputDevice;
         settings.masterVolume = this.masterVolume;
+        settings.theme = this.theme;
+        settings.recentTabs = recentTabsTracker.toList();
+        if (!recentTabsTracker.isEmpty()) {
+            settings.lastPracticedTab = recentTabsTracker.getMostRecent();
+        }
         persistence.saveSettings(settings);
     }
 
@@ -315,6 +337,90 @@ public class ShredForgeRepository {
         currentSession = null;
         currentTab = null;
         isCalibrated = false;
+        recentTabsTracker.clear();
         LOGGER.warning("All repository data cleared");
+    }
+
+    // ========== Theme Management ==========
+
+    /**
+     * Get current theme
+     * @return "light" or "dark"
+     */
+    public String getTheme() {
+        return theme != null ? theme : "light";
+    }
+
+    /**
+     * Set theme and save to disk
+     * @param theme "light" or "dark"
+     */
+    public void setTheme(String theme) {
+        if (theme == null || (!theme.equals("light") && !theme.equals("dark"))) {
+            LOGGER.warning("Invalid theme: " + theme + ", defaulting to light");
+            this.theme = "light";
+        } else {
+            this.theme = theme;
+        }
+        saveSettings();
+        LOGGER.info("Theme set to: " + this.theme);
+    }
+
+    /**
+     * Toggle between light and dark theme
+     * @return New theme value
+     */
+    public String toggleTheme() {
+        if ("dark".equals(theme)) {
+            setTheme("light");
+        } else {
+            setTheme("dark");
+        }
+        return theme;
+    }
+
+    // ========== Recent Tabs Management ==========
+
+    /**
+     * Get list of recent tab IDs
+     * @return List of recent tab IDs in order (most recent first)
+     */
+    public List<String> getRecentTabIds() {
+        return recentTabsTracker.getRecentTabs();
+    }
+
+    /**
+     * Get list of recent tabs (full Tab objects)
+     * @return List of recent Tab objects
+     */
+    public List<Tab> getRecentTabs() {
+        List<Tab> recentTabs = new ArrayList<>();
+        for (String tabId : recentTabsTracker.getRecentTabs()) {
+            Tab tab = tabs.get(tabId);
+            if (tab != null) {
+                recentTabs.add(tab);
+            } else {
+                // Tab was deleted, remove from recent history
+                recentTabsTracker.removeTab(tabId);
+            }
+        }
+        return recentTabs;
+    }
+
+    /**
+     * Get the most recently practiced tab
+     * @return Most recent tab, or null if none
+     */
+    public Tab getMostRecentTab() {
+        String recentId = recentTabsTracker.getMostRecent();
+        if (recentId != null) {
+            Tab tab = tabs.get(recentId);
+            if (tab == null) {
+                // Tab was deleted, remove from history
+                recentTabsTracker.removeTab(recentId);
+            }
+            return tab;
+        }
+        return null;
     }
 }
