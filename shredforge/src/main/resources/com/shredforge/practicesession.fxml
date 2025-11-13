@@ -11,24 +11,25 @@
 
     <!-- Top: Info Panel -->
     <top>
-        <HBox alignment="CENTER" spacing="30.0" style="-fx-background-color: linear-gradient(to bottom, #667eea 0%, #764ba2 100%); -fx-padding: 20;">
-            <VBox alignment="CENTER" spacing="5.0">
-                <Label text="Accuracy" style="-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 13px;" />
-                <Label fx:id="accuracyLabel" text="0.0%" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;" />
+        <HBox alignment="CENTER" spacing="30.0" style="-fx-background-color: linear-gradient(to right, #0f3460, #16213e); -fx-padding: 20;">
+            <VBox alignment="CENTER" spacing="5.0" style="-fx-background-color: rgba(0, 217, 255, 0.2); -fx-padding: 12 18; -fx-background-radius: 10;">
+                <Label text="Accuracy" style="-fx-font-weight: bold; -fx-text-fill: #888; -fx-font-size: 12px;" />
+                <Label fx:id="accuracyLabel" text="0.0%" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #00d9ff;" />
             </VBox>
 
-            <VBox alignment="CENTER" spacing="5.0">
-                <Label text="Notes Completed" style="-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 13px;" />
-                <Label fx:id="notesCompletedLabel" text="0 / 0" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;" />
+            <VBox alignment="CENTER" spacing="5.0" style="-fx-background-color: rgba(0, 255, 136, 0.2); -fx-padding: 12 18; -fx-background-radius: 10;">
+                <Label text="Notes Completed" style="-fx-font-weight: bold; -fx-text-fill: #888; -fx-font-size: 12px;" />
+                <Label fx:id="notesCompletedLabel" text="0 / 0" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #00ff88;" />
             </VBox>
 
-            <VBox alignment="CENTER" spacing="5.0">
-                <Label fx:id="streakLabel" text="🔥 Streak: 0" style="-fx-font-weight: bold; -fx-font-size: 20px; -fx-text-fill: #FFD700;" />
+            <VBox alignment="CENTER" spacing="5.0" style="-fx-background-color: rgba(233, 69, 96, 0.2); -fx-padding: 12 18; -fx-background-radius: 10;">
+                <Label text="🔥 Streak" style="-fx-font-weight: bold; -fx-text-fill: #888; -fx-font-size: 12px;" />
+                <Label fx:id="streakLabel" text="0" style="-fx-font-weight: bold; -fx-font-size: 24px; -fx-text-fill: #e94560;" />
             </VBox>
 
-            <VBox alignment="CENTER" spacing="5.0">
-                <Label text="Time" style="-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 13px;" />
-                <Label fx:id="timeLabel" text="00:00" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;" />
+            <VBox alignment="CENTER" spacing="5.0" style="-fx-background-color: rgba(255, 170, 0, 0.2); -fx-padding: 12 18; -fx-background-radius: 10;">
+                <Label text="Time" style="-fx-font-weight: bold; -fx-text-fill: #888; -fx-font-size: 12px;" />
+                <Label fx:id="timeLabel" text="00:00" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #ffaa00;" />
             </VBox>
         </HBox>
     </top>

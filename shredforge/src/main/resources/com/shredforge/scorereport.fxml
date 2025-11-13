@@ -25,16 +25,16 @@
     </Label>
 
     <!-- Overall Score Section -->
-    <VBox alignment="CENTER" spacing="15.0" style="-fx-background-color: white; -fx-padding: 30; -fx-background-radius: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 3);">
-        <Label text="Your Accuracy" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #667eea;" />
+    <VBox alignment="CENTER" spacing="15.0" style="-fx-background-color: linear-gradient(to bottom right, rgba(0, 217, 255, 0.15), rgba(233, 69, 96, 0.15)); -fx-padding: 40; -fx-background-radius: 15; -fx-border-color: rgba(0, 217, 255, 0.3); -fx-border-width: 1.5; -fx-border-radius: 15;">
+        <Label text="🎸 Practice Complete!" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;" />
 
-        <Label fx:id="scoreLabel" text="0.0%" textAlignment="CENTER" style="-fx-text-fill: #667eea;">
+        <Label fx:id="scoreLabel" text="0.0%" textAlignment="CENTER" style="-fx-text-fill: #00ff88;">
             <font>
                 <Font name="System Bold" size="56.0" />
             </font>
         </Label>
 
-        <Label fx:id="gradeLabel" text="C" textAlignment="CENTER" style="-fx-text-fill: #764ba2;">
+        <Label fx:id="gradeLabel" text="C" textAlignment="CENTER" style="-fx-text-fill: #00d9ff;">
             <font>
                 <Font name="System Bold" size="80.0" />
             </font>
@@ -47,7 +47,7 @@
     </VBox>
 
     <!-- Statistics Panel -->
-    <GridPane hgap="20.0" vgap="15.0" maxWidth="600.0" style="-fx-background-color: white; -fx-padding: 25; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);">
+    <GridPane hgap="20.0" vgap="15.0" maxWidth="600.0" style="-fx-background-color: rgba(15, 52, 96, 0.3); -fx-padding: 25; -fx-background-radius: 12; -fx-border-color: rgba(0, 217, 255, 0.2); -fx-border-width: 1.5; -fx-border-radius: 12;">
         <columnConstraints>
             <ColumnConstraints halignment="RIGHT" minWidth="150.0" />
             <ColumnConstraints halignment="LEFT" minWidth="100.0" />
