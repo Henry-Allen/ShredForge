@@ -4,6 +4,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
+<?import javafx.scene.control.Tooltip?>
 
 <VBox alignment="TOP_CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.shredforge.ui.ScoreReportController">
     <padding>
@@ -89,12 +90,18 @@
             <font>
                 <Font size="14.0" />
             </font>
+            <tooltip>
+                <Tooltip text="Practice this tab again to improve your score" />
+            </tooltip>
         </Button>
 
         <Button fx:id="backToMenuButton" text="Back to Menu" onAction="#handleBackToMenu" minWidth="150.0">
             <font>
                 <Font size="14.0" />
             </font>
+            <tooltip>
+                <Tooltip text="Return to the main menu" />
+            </tooltip>
         </Button>
     </HBox>
 

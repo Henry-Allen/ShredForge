@@ -250,13 +250,12 @@ public class CalibrationController {
 
         showStatus("Calibration successful! You can now start practicing.");
 
-        // Show success alert
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Calibration Complete");
-        alert.setHeaderText(null);
-        alert.setContentText("Your guitar has been calibrated successfully!\n\n" +
-                           "You can now practice tabs with accurate note detection.");
-        alert.showAndWait();
+        // Show success dialog
+        DialogHelper.showSuccess(
+            "Calibration Complete",
+            "Your guitar has been calibrated successfully!\n\n" +
+            "You can now practice tabs with accurate note detection."
+        );
     }
 
     private void showStatus(String message) {

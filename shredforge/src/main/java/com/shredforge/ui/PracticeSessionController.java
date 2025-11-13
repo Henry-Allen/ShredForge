@@ -100,17 +100,17 @@ public class PracticeSessionController {
 
         // Check calibration
         if (!repository.isCalibrated()) {
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("Calibration Required");
-            alert.setHeaderText("Guitar Not Calibrated");
-            alert.setContentText("For best results, please calibrate your guitar before practicing.\n\nDo you want to continue anyway?");
-            alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO);
+            boolean proceed = DialogHelper.showConfirmation(
+                "Calibration Recommended",
+                "Your guitar hasn't been calibrated yet.\n\n" +
+                "For best accuracy, we recommend calibrating before practice.\n\n" +
+                "Would you like to continue anyway?"
+            );
 
-            alert.showAndWait().ifPresent(response -> {
-                if (response == ButtonType.NO) {
-                    handleBack();
-                }
-            });
+            if (!proceed) {
+                handleBack();
+                return;
+            }
         }
 
         // Set up tempo slider
@@ -134,6 +134,46 @@ public class PracticeSessionController {
         // Initial display
         updateDisplay();
         showStatus("Ready to practice: " + currentTab.getTitle());
+
+        // Set up keyboard shortcuts
+        setupKeyboardShortcuts();
+    }
+
+    /**
+     * Set up keyboard shortcuts for practice session
+     */
+    private void setupKeyboardShortcuts() {
+        if (tabCanvas != null && tabCanvas.getScene() != null) {
+            tabCanvas.getScene().setOnKeyPressed(event -> {
+                switch (event.getCode()) {
+                    case SPACE:
+                        event.consume();
+                        if (isPlaying && !pauseButton.isDisabled()) {
+                            handlePause();
+                        } else if (!playButton.isDisabled()) {
+                            handlePlay();
+                        }
+                        break;
+                    case ESCAPE:
+                        event.consume();
+                        if (!stopButton.isDisabled()) {
+                            handleStop();
+                        }
+                        break;
+                    case R:
+                        event.consume();
+                        if (!stopButton.isDisabled()) {
+                            // Restart: stop and play again
+                            handleStop();
+                            Platform.runLater(() -> handlePlay());
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            });
+            LOGGER.info("Keyboard shortcuts enabled");
+        }
     }
 
     private void initializeSession() {
@@ -241,11 +281,26 @@ public class PracticeSessionController {
 
     @FXML
     private void handleBack() {
+        // Confirm if practice is in progress
+        if (isPlaying || currentSession != null) {
+            boolean confirmed = DialogHelper.showConfirmation(
+                "Leave Practice Session",
+                "Are you sure you want to leave?\n\n" +
+                "Your current progress will be lost."
+            );
+
+            if (!confirmed) {
+                LOGGER.info("User cancelled leaving practice session");
+                return;
+            }
+        }
+
         stopSession();
         try {
             App.setRoot("mainmenu");
         } catch (Exception e) {
             LOGGER.severe("Failed to return to main menu: " + e.getMessage());
+            DialogHelper.showError("Navigation Error", "Could not return to main menu.\n\nPlease restart the application.");
         }
     }
 
