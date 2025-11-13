@@ -29,6 +29,7 @@ module com.shredforge {
     exports com.shredforge.ui;
     exports com.shredforge.persistence;
     exports com.shredforge.demo;
+    exports com.shredforge.util;
 
     // Open packages to JavaFX for FXML and reflection
     opens com.shredforge to javafx.fxml;
