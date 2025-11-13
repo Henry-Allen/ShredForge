@@ -123,8 +123,13 @@ public class MainMenuController {
     @FXML
     private void handleSettings() {
         LOGGER.info("Settings clicked");
-        if (statusLabel != null) {
-            statusLabel.setText("Settings: Audio Device: " + repository.getAudioInputDevice());
+        try {
+            com.shredforge.App.setRoot("settings");
+        } catch (Exception e) {
+            LOGGER.severe("Failed to load settings: " + e.getMessage());
+            if (statusLabel != null) {
+                statusLabel.setText("Error loading settings");
+            }
         }
     }
 

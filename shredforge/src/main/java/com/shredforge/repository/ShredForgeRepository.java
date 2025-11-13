@@ -1,6 +1,7 @@
 package com.shredforge.repository;
 
 import com.shredforge.model.*;
+import com.shredforge.persistence.DataPersistence;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
@@ -8,7 +9,7 @@ import java.util.logging.Logger;
 /**
  * Central data repository for ShredForge following the Repository architectural pattern.
  * Provides unified data access for all subsystems including tabs, calibration, sessions, and settings.
- * Thread-safe singleton implementation.
+ * Thread-safe singleton implementation with persistence.
  */
 public class ShredForgeRepository {
     private static final Logger LOGGER = Logger.getLogger(ShredForgeRepository.class.getName());
@@ -26,18 +27,43 @@ public class ShredForgeRepository {
     private boolean isCalibrated;
     private float masterVolume;
 
+    // Persistence
+    private final DataPersistence persistence;
+
     private ShredForgeRepository() {
         this.tabs = new ConcurrentHashMap<>();
         this.sessions = new ConcurrentHashMap<>();
-        this.calibrationData = new CalibrationData();
-        this.currentSession = null;
-        this.currentTab = null;
+        this.persistence = new DataPersistence();
 
-        this.audioInputDevice = "default";
-        this.isCalibrated = false;
-        this.masterVolume = 0.8f;
+        // Load persisted data
+        loadPersistedData();
 
         LOGGER.info("ShredForgeRepository initialized");
+    }
+
+    /**
+     * Load persisted data from disk
+     */
+    private void loadPersistedData() {
+        // Load calibration data
+        CalibrationData savedCalibration = persistence.loadCalibrationData();
+        if (savedCalibration != null) {
+            this.calibrationData = savedCalibration;
+            this.isCalibrated = savedCalibration.isCalibrated();
+            LOGGER.info("Loaded calibration data from disk");
+        } else {
+            this.calibrationData = new CalibrationData();
+            this.isCalibrated = false;
+        }
+
+        // Load settings
+        DataPersistence.AppSettings settings = persistence.loadSettings();
+        this.audioInputDevice = settings.audioInputDevice;
+        this.masterVolume = settings.masterVolume;
+        LOGGER.info("Loaded settings from disk");
+
+        this.currentSession = null;
+        this.currentTab = null;
     }
 
     /**
@@ -159,7 +185,7 @@ public class ShredForgeRepository {
     // ========== Calibration Management ==========
 
     /**
-     * Save calibration data
+     * Save calibration data (in memory and to disk)
      */
     public void saveCalibrationData(CalibrationData data) {
         if (data == null) {
@@ -167,6 +193,10 @@ public class ShredForgeRepository {
         }
         this.calibrationData = data;
         this.isCalibrated = data.isCalibrated();
+
+        // Persist to disk
+        persistence.saveCalibrationData(data);
+
         LOGGER.info("Calibration data saved: " + data.toString());
     }
 
@@ -196,10 +226,11 @@ public class ShredForgeRepository {
     // ========== Settings Management ==========
 
     /**
-     * Set audio input device
+     * Set audio input device (saves to disk)
      */
     public void setAudioInputDevice(String device) {
         this.audioInputDevice = device;
+        saveSettings();
         LOGGER.info("Audio input device set to: " + device);
     }
 
@@ -211,13 +242,24 @@ public class ShredForgeRepository {
     }
 
     /**
-     * Set master volume
+     * Set master volume (saves to disk)
      */
     public void setMasterVolume(float volume) {
         if (volume < 0.0f || volume > 1.0f) {
             throw new IllegalArgumentException("Volume must be between 0.0 and 1.0");
         }
         this.masterVolume = volume;
+        saveSettings();
+    }
+
+    /**
+     * Save current settings to disk
+     */
+    private void saveSettings() {
+        DataPersistence.AppSettings settings = new DataPersistence.AppSettings();
+        settings.audioInputDevice = this.audioInputDevice;
+        settings.masterVolume = this.masterVolume;
+        persistence.saveSettings(settings);
     }
 
     /**

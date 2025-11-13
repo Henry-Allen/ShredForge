@@ -29,6 +29,10 @@ public class App extends Application {
     public void start(Stage stage) {
         try {
             primaryStage = stage;
+
+            // Create demo tabs if needed (first time user)
+            com.shredforge.demo.DemoDataGenerator.createDemoTabsIfNeeded();
+
             scene = new Scene(loadFXML("mainmenu"), DEFAULT_WIDTH, DEFAULT_HEIGHT);
 
             // Configure the primary stage
