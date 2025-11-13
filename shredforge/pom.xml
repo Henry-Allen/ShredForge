@@ -104,6 +104,8 @@
                             <!-- Allow access to TarsosDSP non-modular library at runtime -->
                             <option>--add-reads</option>
                             <option>com.shredforge=ALL-UNNAMED</option>
+                            <!-- Enable native access for JavaFX graphics to avoid warnings -->
+                            <option>--enable-native-access=javafx.graphics</option>
                         </options>
                     </configuration>
                     <executions>
