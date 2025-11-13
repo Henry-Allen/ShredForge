@@ -10,6 +10,7 @@ import javafx.scene.paint.Color;
 import javafx.util.Duration;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.Node;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,13 +22,14 @@ import java.util.logging.Logger;
  * 
  * Features:
  * - Interactive tablature display with canvas rendering
- * - Real-time note detection and comparison
+ * - Real-time note detection simulation
  * - Variable playback speed control (0.25x - 2.0x)
- * - Accuracy tracking and grading system
- * - Guitar calibration integration
+ * - Enhanced accuracy tracking and grading system
  * - Visual feedback and animations
+ * - Search functionality for tabs
+ * - Expanded tab library
  * 
- * @version 1.1
+ * @version 1.3
  * @author Team 2 - ShredForge
  */
 public class PrimaryController {
@@ -93,11 +95,13 @@ public class PrimaryController {
         setupCanvas();
         setupSlider();
         setupListView();
+        setupSearchField();
         loadSampleTabs();
         startStatusAnimation();
         animateWelcome();
         pauseBtn.setDisable(true);
         startBtn.setDisable(true); // Disabled until tab is loaded and calibrated
+        LOGGER.info("PrimaryController initialized successfully");
     }
 
     /**
@@ -165,7 +169,19 @@ public class PrimaryController {
                     setStyle("");
                 } else {
                     setText(item);
-                    setStyle("-fx-text-fill: white; -fx-background-color: transparent; -fx-padding: 12;");
+                    
+                    final String baseStyle = "-fx-text-fill: white; " +
+                           "-fx-background-color: transparent; " +
+                           "-fx-padding: 12; " +
+                           "-fx-font-size: 14px;";
+                    
+                    final String hoverStyle = baseStyle +
+                           "-fx-background-color: rgba(0, 217, 255, 0.15); " +
+                           "-fx-cursor: hand;";
+                    
+                    setStyle(baseStyle);
+                    setOnMouseEntered(e -> setStyle(hoverStyle));
+                    setOnMouseExited(e -> setStyle(baseStyle));
                 }
             }
         });
@@ -176,6 +192,39 @@ public class PrimaryController {
                 animateTabLoad();
             }
         });
+    }
+
+    /**
+     * Sets up search field functionality
+     */
+    private void setupSearchField() {
+        if (searchField != null) {
+            searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+                filterTabs(newValue);
+            });
+        }
+    }
+
+    /**
+     * Filters tabs based on search query
+     */
+    private void filterTabs(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            tabListView.setItems(javafx.collections.FXCollections.observableArrayList(tabDatabase.keySet()));
+            return;
+        }
+        
+        List<String> filtered = new ArrayList<>();
+        String lowerQuery = query.toLowerCase();
+        
+        for (String tabName : tabDatabase.keySet()) {
+            if (tabName.toLowerCase().contains(lowerQuery)) {
+                filtered.add(tabName);
+            }
+        }
+        
+        tabListView.setItems(javafx.collections.FXCollections.observableArrayList(filtered));
+        LOGGER.info("Filtered tabs: " + filtered.size() + " results");
     }
 
     /**
@@ -194,6 +243,8 @@ public class PrimaryController {
      * Animates a label with scale effect
      */
     private void animateLabel(Label label) {
+        if (label == null) return;
+        
         ScaleTransition scale = new ScaleTransition(Duration.millis(150), label);
         scale.setFromX(1.0);
         scale.setFromY(1.0);
@@ -210,38 +261,45 @@ public class PrimaryController {
     private void loadSampleTabs() {
         LOGGER.info("Loading sample tabs");
         
-        // Smoke on the Water
-        tabDatabase.put("🔥 Smoke on the Water - Deep Purple (Beginner)", 
-            new TabData("Smoke on the Water", "Deep Purple", 1, 50, 90));
-        tabNoteData.put("🔥 Smoke on the Water - Deep Purple (Beginner)", 
-            generateTabNotes(50, 90)); // 50 notes, 90 BPM
+        // Beginner tabs
+        addTab("🔥 Smoke on the Water - Deep Purple (Beginner)", 
+            "Smoke on the Water", "Deep Purple", 1, 50, 90);
         
-        // Enter Sandman
-        tabDatabase.put("⚡ Enter Sandman - Metallica (Intermediate)", 
-            new TabData("Enter Sandman", "Metallica", 2, 120, 140));
-        tabNoteData.put("⚡ Enter Sandman - Metallica (Intermediate)", 
-            generateTabNotes(120, 140));
+        addTab("⭐ Seven Nation Army - The White Stripes (Beginner)", 
+            "Seven Nation Army", "The White Stripes", 1, 40, 110);
         
-        // Stairway to Heaven
-        tabDatabase.put("🌟 Stairway to Heaven - Led Zeppelin (Advanced)", 
-            new TabData("Stairway to Heaven", "Led Zeppelin", 3, 200, 80));
-        tabNoteData.put("🌟 Stairway to Heaven - Led Zeppelin (Advanced)", 
-            generateTabNotes(200, 80));
+        // Intermediate tabs
+        addTab("⚡ Enter Sandman - Metallica (Intermediate)", 
+            "Enter Sandman", "Metallica", 2, 120, 140);
         
-        // Sweet Child O' Mine
-        tabDatabase.put("🎵 Sweet Child O' Mine - Guns N' Roses (Intermediate)", 
-            new TabData("Sweet Child O' Mine", "Guns N' Roses", 2, 150, 125));
-        tabNoteData.put("🎵 Sweet Child O' Mine - Guns N' Roses (Intermediate)", 
-            generateTabNotes(150, 125));
+        addTab("🎵 Sweet Child O' Mine - Guns N' Roses (Intermediate)", 
+            "Sweet Child O' Mine", "Guns N' Roses", 2, 150, 125);
         
-        // Back in Black
-        tabDatabase.put("🔊 Back in Black - AC/DC (Beginner)", 
-            new TabData("Back in Black", "AC/DC", 1, 80, 95));
-        tabNoteData.put("🔊 Back in Black - AC/DC (Beginner)", 
-            generateTabNotes(80, 95));
+        addTab("🎸 Nothing Else Matters - Metallica (Intermediate)", 
+            "Nothing Else Matters", "Metallica", 2, 100, 100);
         
-        tabListView.getItems().addAll(tabDatabase.keySet());
-        LOGGER.info("Loaded " + tabDatabase.size() + " sample tabs");
+        // Advanced tabs
+        addTab("🌟 Stairway to Heaven - Led Zeppelin (Advanced)", 
+            "Stairway to Heaven", "Led Zeppelin", 3, 200, 80);
+        
+        addTab("🔥 Master of Puppets - Metallica (Advanced)", 
+            "Master of Puppets", "Metallica", 3, 220, 150);
+        
+        addTab("⚡ Eruption - Van Halen (Advanced)", 
+            "Eruption", "Van Halen", 3, 180, 200);
+        
+        // Update list view
+        tabListView.setItems(javafx.collections.FXCollections.observableArrayList(tabDatabase.keySet()));
+        
+        LOGGER.info("Loaded " + tabDatabase.size() + " tabs");
+    }
+
+    /**
+     * Helper method to add a tab
+     */
+    private void addTab(String displayName, String name, String artist, int difficulty, int noteCount, int bpm) {
+        tabDatabase.put(displayName, new TabData(name, artist, difficulty, noteCount, bpm));
+        tabNoteData.put(displayName, generateTabNotes(noteCount, bpm));
     }
 
     /**
@@ -249,248 +307,193 @@ public class PrimaryController {
      */
     private List<TabNote> generateTabNotes(int count, int bpm) {
         List<TabNote> notes = new ArrayList<>();
-        int[] frets = {0, 3, 5, 7, 8, 10, 12};
+        long timePerBeat = (long) (60000.0 / bpm); // ms per beat
         
         for (int i = 0; i < count; i++) {
-            int string = random.nextInt(6); // 0-5
-            int fret = frets[random.nextInt(frets.length)];
-            long timestamp = (long) (i * (60000.0 / bpm)); // Convert BPM to ms between notes
-            
+            int string = random.nextInt(6);
+            int fret = random.nextInt(12);
+            long timestamp = i * timePerBeat;
             notes.add(new TabNote(string, fret, timestamp));
         }
         
         return notes;
     }
 
-    @FXML
-    private void handleSearch() {
-        String query = searchField.getText().trim();
-        if (query.isEmpty()) {
-            updateStatus("Please enter a search term! 🔍");
-            shakeNode(searchField);
-            return;
-        }
-        
-        updateStatus("Searching for: " + query + "...");
-        tabListView.getItems().clear();
-        
-        // Search in background thread to keep UI responsive
-        new Thread(() -> {
-            try {
-                Thread.sleep(500); // Simulate API call
-                Platform.runLater(() -> {
-                    tabDatabase.keySet().stream()
-                        .filter(tab -> tab.toLowerCase().contains(query.toLowerCase()))
-                        .forEach(tab -> tabListView.getItems().add(tab));
-                    
-                    if (tabListView.getItems().isEmpty()) {
-                        tabListView.getItems().add("No results found - try 'Smoke' or 'Metallica'");
-                        updateStatus("No tabs found for: " + query);
-                    } else {
-                        updateStatus("Found " + tabListView.getItems().size() + " tabs! 🎸");
-                        pulseNode(tabListView);
-                    }
-                });
-            } catch (InterruptedException e) {
-                LOGGER.log(Level.WARNING, "Search interrupted", e);
-                Thread.currentThread().interrupt();
-            }
-        }, "Search-Thread").start();
-    }
-
-    /**
-     * Shakes a node to indicate error
-     */
-    private void shakeNode(javafx.scene.Node node) {
-        TranslateTransition shake = new TranslateTransition(Duration.millis(50), node);
-        shake.setFromX(0);
-        shake.setByX(10);
-        shake.setCycleCount(6);
-        shake.setAutoReverse(true);
-        shake.play();
-    }
-
-    /**
-     * Pulses a node to draw attention
-     */
-    private void pulseNode(javafx.scene.Node node) {
-        ScaleTransition pulse = new ScaleTransition(Duration.millis(200), node);
-        pulse.setFromX(1.0);
-        pulse.setFromY(1.0);
-        pulse.setToX(1.03);
-        pulse.setToY(1.03);
-        pulse.setAutoReverse(true);
-        pulse.setCycleCount(2);
-        pulse.play();
-    }
-
-    @FXML
-    private void handleCalibrate() {
-        updateStatus("Calibrating guitar input... 🎚️");
-        calibrateBtn.setDisable(true);
-        
-        RotateTransition rotate = new RotateTransition(Duration.millis(1000), calibrateBtn);
-        rotate.setByAngle(360);
-        rotate.setCycleCount(5);
-        rotate.play();
-        
-        // Simulate calibration process
-        new Thread(() -> {
-            try {
-                for (int i = 1; i <= 6; i++) {
-                    int string = i;
-                    Platform.runLater(() -> {
-                        updateStatus("Play string " + string + "/6... (" + STRING_NAMES[6 - string] + ")");
-                    });
-                    Thread.sleep(800);
-                }
-                
-                Platform.runLater(() -> {
-                    isCalibrated = true;
-                    calibrationStatus.setText("✅ Calibrated");
-                    calibrationStatus.setStyle("-fx-text-fill: #00ff88; -fx-font-weight: bold;");
-                    updateStatus("Calibration complete! Ready to shred! 🤘");
-                    calibrateBtn.setDisable(false);
-                    pulseNode(calibrationStatus);
-                    
-                    // Enable start button if tab is loaded
-                    if (currentTab != null) {
-                        startBtn.setDisable(false);
-                        pulseNode(startBtn);
-                    }
-                });
-            } catch (InterruptedException e) {
-                LOGGER.log(Level.WARNING, "Calibration interrupted", e);
-                Thread.currentThread().interrupt();
-            }
-        }, "Calibration-Thread").start();
-    }
-
     /**
      * Loads a tab and prepares for playback
      */
     private void loadTab(String tabKey) {
-        if (!tabDatabase.containsKey(tabKey)) {
+        TabData tab = tabDatabase.get(tabKey);
+        if (tab == null) {
             LOGGER.warning("Tab not found: " + tabKey);
             return;
         }
         
-        TabData tab = tabDatabase.get(tabKey);
         currentTab = tab.name;
-        currentTabLabel.setText(tab.name + " - " + tab.artist);
         totalNotes = tab.noteCount;
+        currentPosition = 0;
         correctNotes = 0;
         attemptedNotes = 0;
-        currentPosition = 0;
         streak = 0;
+        maxStreak = 0;
         
-        updateStatus("Loaded: " + tab.name + " 🎵");
-        drawTab(tab);
+        currentTabLabel.setText(tab.name + " - " + tab.artist);
         updateStats();
+        drawTab(tab);
         
+        // Enable start button if calibrated
         if (isCalibrated) {
             startBtn.setDisable(false);
-            pulseNode(startBtn);
-        } else {
-            updateStatus("Please calibrate your guitar first! 🎚️");
-            pulseNode(calibrateBtn);
         }
         
-        LOGGER.info("Tab loaded: " + tab.name + " (" + tab.noteCount + " notes)");
+        updateStatus("Tab loaded: " + tab.name + " 🎸");
+        LOGGER.info("Loaded tab: " + tab.name);
     }
 
     /**
-     * Draws the tab on the canvas with enhanced visuals
+     * Draws the tab on canvas
      */
     private void drawTab(TabData tab) {
         GraphicsContext gc = tabCanvas.getGraphicsContext2D();
         double width = tabCanvas.getWidth();
         double height = tabCanvas.getHeight();
         
-        // Clear with gradient background
+        // Clear and draw background
         gc.setFill(Color.web("#0a0a0a"));
         gc.fillRect(0, 0, width, height);
         
         // Draw strings
-        gc.setStroke(Color.web("#333"));
+        gc.setStroke(Color.web("#444"));
         gc.setLineWidth(2);
-        
-        for (int i = 1; i <= 6; i++) {
-            double y = STRING_SPACING * i;
-            gc.strokeLine(50, y, width - 50, y);
-        }
-        
-        // String names on the left
-        gc.setFill(Color.web("#00d9ff"));
-        gc.setFont(Font.font("Monospace", FontWeight.BOLD, 16));
         for (int i = 0; i < 6; i++) {
-            gc.fillText(STRING_NAMES[i], 20, STRING_SPACING * (i + 1) + 5);
+            double y = (height / 7) * (i + 1);
+            gc.strokeLine(50, y, width - 50, y);
+            
+            // String names
+            gc.setFill(NOTE_COLORS[i]);
+            gc.setFont(Font.font("System", FontWeight.BOLD, 14));
+            gc.fillText(STRING_NAMES[i], 20, y + 5);
         }
         
-        // Draw tab notes
-        List<TabNote> notes = tabNoteData.get(tabListView.getSelectionModel().getSelectedItem());
-        if (notes != null) {
-            drawTabNotes(gc, notes, width);
+        // Draw title
+        gc.setFill(Color.web("#00d9ff"));
+        gc.setFont(Font.font("System", FontWeight.BOLD, 18));
+        gc.fillText(tab.name + " - " + tab.artist, width / 2 - 100, 30);
+        
+        // Draw BPM and difficulty
+        gc.setFill(Color.web("#ffaa00"));
+        gc.setFont(Font.font("System", 14));
+        String difficultyText = getDifficultyText(tab.difficulty);
+        gc.fillText("♩ = " + tab.bpm + " BPM | " + difficultyText, width - 250, 30);
+        
+        // Draw some sample notes
+        drawSampleNotes(gc, tab);
+        
+        // Draw playback position indicator if playing
+        if (isPlaying && totalNotes > 0) {
+            double progress = (double) currentPosition / totalNotes;
+            double indicatorX = 50 + progress * (width - 100);
+            gc.setStroke(Color.web("#e94560"));
+            gc.setLineWidth(3);
+            gc.strokeLine(indicatorX, 50, indicatorX, height - 50);
         }
-        
-        // Draw difficulty badge
-        drawDifficultyBadge(gc, tab, width);
-        
-        // Draw tempo indicator
-        drawTempoIndicator(gc, tab);
     }
 
     /**
-     * Draws tab notes on the canvas
+     * Draws sample notes on the tab
      */
-    private void drawTabNotes(GraphicsContext gc, List<TabNote> notes, double width) {
-        double noteX = 100;
-        int displayCount = Math.min(VISIBLE_NOTES, notes.size());
-        int startIndex = Math.max(0, currentPosition - 2);
+    private void drawSampleNotes(GraphicsContext gc, TabData tab) {
+        double width = tabCanvas.getWidth();
+        double height = tabCanvas.getHeight();
         
-        for (int i = 0; i < displayCount && (startIndex + i) < notes.size(); i++) {
-            TabNote note = notes.get(startIndex + i);
-            double y = STRING_SPACING * (note.string + 1);
+        List<TabNote> notes = tabNoteData.get(tabListView.getSelectionModel().getSelectedItem());
+        if (notes == null) return;
+        
+        int startIndex = Math.max(0, currentPosition - 5);
+        int endIndex = Math.min(notes.size(), currentPosition + VISIBLE_NOTES);
+        
+        gc.setFont(Font.font("System", FontWeight.BOLD, 16));
+        
+        for (int i = startIndex; i < endIndex; i++) {
+            TabNote note = notes.get(i);
+            double x = 100 + ((i - startIndex) * NOTE_SPACING);
+            double y = (height / 7) * (note.string + 1);
             
             // Highlight current note
-            if ((startIndex + i) == currentPosition && isPlaying) {
-                gc.setFill(Color.web("#00ff88", 0.3));
-                gc.fillOval(noteX - 20, y - 20, 40, 40);
-                gc.setFill(Color.web("#00ff88"));
-            } else {
-                gc.setFill(NOTE_COLORS[i % NOTE_COLORS.length]);
+            if (i == currentPosition) {
+                gc.setFill(Color.web("#e94560"));
+                gc.fillOval(x - 15, y - 15, 30, 30);
             }
             
             // Draw fret number
-            gc.setFont(Font.font("System", FontWeight.BOLD, 18));
-            String fretText = String.valueOf(note.fret);
-            gc.fillText(fretText, noteX - (fretText.length() * 4), y + 6);
-            noteX += NOTE_SPACING;
+            gc.setFill(i == currentPosition ? Color.WHITE : NOTE_COLORS[note.string]);
+            gc.fillText(String.valueOf(note.fret), x - 5, y + 6);
         }
     }
 
     /**
-     * Draws difficulty badge
+     * Gets difficulty text from number
      */
-    private void drawDifficultyBadge(GraphicsContext gc, TabData tab, double width) {
-        gc.setFill(Color.web("#ffaa00", 0.9));
-        gc.fillRoundRect(width - 180, 20, 150, 40, 10, 10);
-        gc.setFill(Color.web("#1a1a2e"));
-        gc.setFont(Font.font("System", FontWeight.BOLD, 16));
-        String difficulty = tab.difficulty == 1 ? "🟢 Beginner" : 
-                          tab.difficulty == 2 ? "🟡 Intermediate" : "🔴 Advanced";
-        gc.fillText(difficulty, width - 170, 45);
+    private String getDifficultyText(int difficulty) {
+        switch (difficulty) {
+            case 1: return "⭐ Beginner";
+            case 2: return "⭐⭐ Intermediate";
+            case 3: return "⭐⭐⭐ Advanced";
+            default: return "Unknown";
+        }
+    }
+
+    @FXML
+    private void handleSearch() {
+        String query = searchField.getText();
+        LOGGER.info("Searching for: " + query);
+        filterTabs(query);
+    }
+
+    @FXML
+    private void handleCalibrate() {
+        isCalibrated = true;
+        calibrationStatus.setText("✓ Calibrated");
+        calibrationStatus.setStyle("-fx-text-fill: #00ff88; -fx-font-weight: bold; -fx-font-size: 13px;");
+        
+        if (currentTab != null) {
+            startBtn.setDisable(false);
+        }
+        
+        updateStatus("Calibration complete! ✓");
+        pulseNode(calibrateBtn);
+        
+        LOGGER.info("Guitar calibrated");
     }
 
     /**
-     * Draws tempo indicator
+     * Pulses a node for visual feedback
      */
-    private void drawTempoIndicator(GraphicsContext gc, TabData tab) {
-        gc.setFill(Color.web("#00d9ff", 0.2));
-        gc.fillRoundRect(20, 20, 100, 40, 10, 10);
-        gc.setFill(Color.web("#00d9ff"));
-        gc.setFont(Font.font("System", FontWeight.BOLD, 14));
-        gc.fillText("♩ = " + tab.bpm + " BPM", 30, 45);
+    private void pulseNode(Node node) {
+        if (node == null) return;
+        
+        ScaleTransition pulse = new ScaleTransition(Duration.millis(150), node);
+        pulse.setFromX(1.0);
+        pulse.setFromY(1.0);
+        pulse.setToX(1.1);
+        pulse.setToY(1.1);
+        pulse.setAutoReverse(true);
+        pulse.setCycleCount(2);
+        pulse.play();
+    }
+
+    /**
+     * Shakes a node to indicate error
+     */
+    private void shakeNode(Node node) {
+        if (node == null) return;
+        
+        TranslateTransition shake = new TranslateTransition(Duration.millis(50), node);
+        shake.setFromX(0);
+        shake.setByX(10);
+        shake.setCycleCount(6);
+        shake.setAutoReverse(true);
+        shake.play();
     }
 
     @FXML
@@ -571,6 +574,7 @@ public class PrimaryController {
     private void handlePause() {
         isPlaying = false;
         startBtn.setDisable(false);
+        startBtn.setText("▶️ Resume");
         pauseBtn.setDisable(true);
         
         if (playbackTimeline != null) {
@@ -586,7 +590,7 @@ public class PrimaryController {
      */
     private void showFinalScore() {
         long sessionDuration = (System.currentTimeMillis() - sessionStartTime) / 1000;
-        double accuracy = totalNotes > 0 ? (double) correctNotes / attemptedNotes * 100 : 0;
+        double accuracy = attemptedNotes > 0 ? (double) correctNotes / attemptedNotes * 100 : 0;
         String grade = calculateGrade(accuracy);
         
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -597,7 +601,8 @@ public class PrimaryController {
             String.format("🎯 Accuracy: %.1f%%\n", accuracy) +
             "📊 Grade: " + grade + "\n" +
             "🎵 Notes Hit: " + correctNotes + " / " + attemptedNotes + "\n" +
-            "🔥 Max Streak: " + maxStreak + "\n\n" +
+            "🔥 Max Streak: " + maxStreak + "\n" +
+            "⚡ Speed: " + String.format("%.2fx", currentSpeed) + "\n\n" +
             getEncouragementMessage(accuracy)
         );
         alert.showAndWait();
@@ -607,6 +612,7 @@ public class PrimaryController {
         correctNotes = 0;
         attemptedNotes = 0;
         streak = 0;
+        startBtn.setText("▶️ Start");
         updateStats();
         progressBar.setProgress(0);
         
@@ -617,13 +623,13 @@ public class PrimaryController {
      * Calculates letter grade from accuracy percentage
      */
     private String calculateGrade(double accuracy) {
-        if (accuracy >= 95) return "A+";
-        if (accuracy >= 90) return "A";
-        if (accuracy >= 85) return "B+";
-        if (accuracy >= 80) return "B";
-        if (accuracy >= 75) return "C+";
-        if (accuracy >= 70) return "C";
-        return "D";
+        if (accuracy >= 95) return "A+ ⭐⭐⭐⭐⭐";
+        if (accuracy >= 90) return "A ⭐⭐⭐⭐";
+        if (accuracy >= 85) return "B+ ⭐⭐⭐⭐";
+        if (accuracy >= 80) return "B ⭐⭐⭐";
+        if (accuracy >= 75) return "C+ ⭐⭐";
+        if (accuracy >= 70) return "C ⭐⭐";
+        return "D ⭐";
     }
 
     /**
@@ -651,7 +657,7 @@ public class PrimaryController {
         String color = accuracy >= 90 ? "#00ff88" :
                       accuracy >= 80 ? "#00d9ff" :
                       accuracy >= 70 ? "#ffaa00" : "#ff6b6b";
-        gradeLabel.setStyle("-fx-text-fill: " + color + "; -fx-font-size: 28px; -fx-font-weight: bold;");
+        gradeLabel.setStyle("-fx-text-fill: " + color + "; -fx-font-size: 24px; -fx-font-weight: bold;");
         
         // Add streak indicator
         if (streak >= 5) {
