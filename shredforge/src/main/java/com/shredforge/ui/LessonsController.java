@@ -286,7 +286,7 @@ public class LessonsController {
      * Start a lesson
      */
     private void startLesson(Lesson lesson) {
-        DialogHelper.showInformation("Lesson Starting",
+        DialogHelper.showInfo("Lesson Starting",
             "Starting: " + lesson.getTitle() + "\n\n" +
             "In a full implementation, this would open an interactive lesson player.");
         LOGGER.info("Starting lesson: " + lesson.getTitle());
