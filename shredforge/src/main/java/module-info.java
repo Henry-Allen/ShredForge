@@ -2,6 +2,7 @@ module com.shredforge {
     requires javafx.controls;
     requires javafx.fxml;
     requires javafx.web;
+    requires jdk.jsobject;
     requires java.net.http;
     requires java.desktop;
     requires com.fasterxml.jackson.databind;

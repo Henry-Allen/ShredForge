@@ -17,38 +17,21 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/17.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.shredforge.PrimaryController">
     <top>
-        <VBox spacing="8">
+        <HBox spacing="16" alignment="CENTER_LEFT" styleClass="topbar">
             <padding>
-                <Insets top="15" right="15" bottom="15" left="15"/>
+                <Insets top="10" right="16" bottom="10" left="16"/>
             </padding>
             <children>
-                <Label text="Shredforge Repository Tester" style="-fx-font-size: 20px;" />
-                <Label fx:id="repositoryStatusLabel" text="Loading repository state..." wrapText="true" />
-                <HBox spacing="8">
-                    <children>
-                        <TextField fx:id="searchField" promptText="Search Song or Artist" HBox.hgrow="ALWAYS" />
-                        <Button fx:id="searchOnlineButton" text="Search Online" onAction="#onSearchOnline" />
-                        <Button fx:id="searchSavedButton" text="Search Saved" onAction="#onSearchSaved" />
-                        <Button text="Saved Library" onAction="#listSavedTabs" />
-                        <Button text="Calibration" onAction="#onOpenCalibration" />
-                        <Button text="Refresh Services" onAction="#refreshStatus" />
-                    </children>
-                </HBox>
-                <Label fx:id="searchStatusLabel" text="Ready." wrapText="true" />
+                <Label text="ShredForge" styleClass="app-title" />
+                <Pane HBox.hgrow="ALWAYS" />
+                <Button text="Search" onAction="#openSearchModal" />
+                <Button text="My Tabs" onAction="#listSavedTabs" />
+                <Button text="Refresh" onAction="#refreshStatus" />
+                <Label fx:id="repositoryStatusLabel" text="Loading..." />
             </children>
-        </VBox>
+        </HBox>
     </top>
-    <left>
-        <VBox spacing="8">
-            <padding>
-                <Insets top="15.0" right="15.0" bottom="15.0" left="15.0"/>
-            </padding>
-            <children>
-                <Label text="Results" style="-fx-font-weight: bold;" />
-                <ListView fx:id="resultsList" prefWidth="280" VBox.vgrow="ALWAYS" />
-            </children>
-        </VBox>
-    </left>
+    
     <center>
         <StackPane>
             <padding>
@@ -61,6 +44,33 @@
                         <Rectangle fx:id="playbackIndicator" width="3" height="200" />
                     </children>
                 </Pane>
+                <StackPane fx:id="modalOverlay" visible="false" pickOnBounds="true" styleClass="modal-overlay">
+                    <padding>
+                        <Insets top="40" right="40" bottom="40" left="40"/>
+                    </padding>
+                    <children>
+                        <VBox spacing="12" styleClass="modal-card" maxWidth="720" prefWidth="720">
+                            <children>
+                                <HBox alignment="CENTER_LEFT" spacing="8">
+                                    <children>
+                                        <Label text="Search tabs" styleClass="modal-title" />
+                                        <Pane HBox.hgrow="ALWAYS" />
+                                        <Button text="Close" onAction="#closeModal" />
+                                    </children>
+                                </HBox>
+                                <TextField fx:id="searchField" promptText="Search Song or Artist" />
+                                <HBox spacing="8" alignment="CENTER_LEFT">
+                                    <children>
+                                        <Button fx:id="searchOnlineButton" text="Search Online" onAction="#onSearchOnline" />
+                                        <Button fx:id="searchSavedButton" text="Search Saved" onAction="#onSearchSaved" />
+                                    </children>
+                                </HBox>
+                                <Label fx:id="searchStatusLabel" text="Ready." wrapText="true" />
+                                <ListView fx:id="resultsList" prefHeight="420" VBox.vgrow="ALWAYS" />
+                            </children>
+                        </VBox>
+                    </children>
+                </StackPane>
             </children>
         </StackPane>
     </center>

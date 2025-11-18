@@ -18,8 +18,10 @@ public class App extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-        scene = new Scene(loadFXML("primary"), 720, 520);
-        stage.setTitle("Shredforge Tester");
+        scene = new Scene(loadFXML("primary"), 1200, 800);
+        String stylesheet = App.class.getResource("styles.css").toExternalForm();
+        scene.getStylesheets().add(stylesheet);
+        stage.setTitle("ShredForge");
         stage.setScene(scene);
         stage.show();
     }
@@ -30,10 +32,6 @@ public class App extends Application {
 
     public static void showPrimary() {
         setRoot("primary");
-    }
-
-    public static void showCalibration() {
-        setRoot("calibration");
     }
 
     private static Parent loadFXML(String fxml) throws IOException {

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AlphaTab Host</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #1e1f22;
+        color: #e6e6e6;
+      }
+      #at {
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+    <script>
+      (function () {
+        function load(src, onload) {
+          var s = document.createElement('script');
+          s.src = src;
+          s.onload = onload;
+          s.onerror = function () {
+            onload(true);
+          };
+          document.head.appendChild(s);
+        }
+        // Try local first as required; fall back to CDN if missing
+        load('alphatab.js', function (err) {
+          if (err || !window.alphaTab) {
+            load('https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.5.0/dist/alphaTab.js', function () {});
+          }
+        });
+      })();
+    </script>
+    <script src="alphatab.wasm"></script>
+  </head>
+  <body>
+    <div id="at"></div>
+    <script>
+      let api = null;
+      function ensureApi() {
+        if (api) return api;
+        const el = document.getElementById('at');
+        if (!window.alphaTab || !window.alphaTab.AlphaTabApi) {
+          el.innerHTML = '<div style="padding:12px">AlphaTab library not loaded.</div>';
+          return null;
+        }
+        api = new window.alphaTab.AlphaTabApi(el, { engine: 'svg', player: { enablePlayer: false } });
+        if (api.renderFinished && api.renderFinished.on) {
+          api.renderFinished.on(() => {
+            const svgEl = el.querySelector('svg');
+            const svg = svgEl ? svgEl.outerHTML : '';
+            if (window.javaConnector && window.javaConnector.onSvgReady) {
+              try {
+                window.javaConnector.onSvgReady(svg);
+              } catch (e) {
+                /* ignored */
+              }
+            }
+          });
+        }
+        return api;
+      }
+
+      function normalizeAlphaScore(data) {
+        try {
+          if (!data || typeof data !== 'object') return data;
+          // Ensure stylesheet and masterBars exist
+          data.stylesheet = data.stylesheet || {};
+          if (!Array.isArray(data.masterBars)) data.masterBars = [];
+          // Attach backrefs and fill masterBars by inspecting first track/staff
+          if (Array.isArray(data.tracks)) {
+            for (const t of data.tracks) {
+              if (!t || typeof t !== 'object') continue;
+              t.score = t.score || data;
+              if (!t.playbackInfo) {
+                t.playbackInfo = {
+                  primaryChannel: { program: 25, volume: 1.0, balance: 0.0, isPercussion: false },
+                  secondaryChannel: { program: 25, volume: 1.0, balance: 0.0, isPercussion: false },
+                };
+              }
+              if (!Array.isArray(t.staves)) continue;
+              for (const s of t.staves) {
+                if (!s || typeof s !== 'object') continue;
+                s.track = s.track || t;
+                if (!Array.isArray(s.bars)) continue;
+                for (let i = 0; i < s.bars.length; i++) {
+                  const b = s.bars[i];
+                  if (!b || typeof b !== 'object') continue;
+                  b.staff = b.staff || s;
+                  const ts = b.timeSignature || data.timeSignature || [4, 4];
+                  // Ensure masterBars[i]
+                  if (!data.masterBars[i]) data.masterBars[i] = {};
+                  const mb = data.masterBars[i];
+                  if (!Array.isArray(mb.timeSignature)) mb.timeSignature = [ts[0], ts[1]];
+                  if (!mb.repeatGroup) mb.repeatGroup = { opening: false, closing: false, repeatCount: 0 };
+                  if (!Array.isArray(b.voices)) continue;
+                  for (const v of b.voices) {
+                    if (!v || typeof v !== 'object') continue;
+                    v.bar = v.bar || b;
+                    if (!Array.isArray(v.beats)) continue;
+                    for (const be of v.beats) {
+                      if (!be || typeof be !== 'object') continue;
+                      be.voice = be.voice || v;
+                      if (!Array.isArray(be.notes)) continue;
+                      for (const n of be.notes) {
+                        if (!n || typeof n !== 'object') continue;
+                        n.beat = n.beat || be;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (e) {
+          // ignore normalization errors; alphaTab will show a render error
+        }
+        return data;
+      }
+
+      function toAlphaTex(data) {
+        try {
+          if (!data || !Array.isArray(data.tracks)) return null;
+          const t = data.tracks[0];
+          if (!t || !Array.isArray(t.staves)) return null;
+          const s = t.staves[0];
+          if (!s || !Array.isArray(s.bars)) return null;
+          const parts = [];
+          for (let bi = 0; bi < s.bars.length; bi++) {
+            const b = s.bars[bi];
+            const voices = Array.isArray(b.voices) ? b.voices : [];
+            const v = voices[0] || { beats: [] };
+            const beats = Array.isArray(v.beats) ? v.beats : [];
+            const beatTokens = [];
+            for (const be of beats) {
+              const dur = Array.isArray(be.duration) ? be.duration : [1, 4];
+              const den = dur[1] || 4;
+              if (be.rest) {
+                beatTokens.push('r.' + den);
+                continue;
+              }
+              const notes = Array.isArray(be.notes) ? be.notes.filter((n) => !n.rest) : [];
+              if (notes.length === 0) {
+                beatTokens.push('r.' + den);
+                continue;
+              }
+              if (notes.length === 1) {
+                const n = notes[0];
+                const fret = typeof n.fret === 'number' ? n.fret : 0;
+                const string = typeof n.string === 'number' ? n.string : 1;
+                beatTokens.push(fret + '.' + string + '.' + den);
+              } else {
+                const chord = notes
+                  .map((n) => {
+                    const fret = typeof n.fret === 'number' ? n.fret : 0;
+                    const string = typeof n.string === 'number' ? n.string : 1;
+                    return fret + '.' + string;
+                  })
+                  .join(' ');
+                beatTokens.push('(' + chord + ').' + den);
+              }
+            }
+            parts.push(beatTokens.join(' '));
+          }
+          return parts.join(' | ');
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function renderScore(alphaTabScoreJson) {
+        const el = document.getElementById('at');
+        const api = ensureApi();
+        if (!api) return;
+        let data = {};
+        try {
+          data = JSON.parse(alphaTabScoreJson || '{}');
+        } catch (e) {
+          el.innerHTML = '<div style="padding:12px">Invalid score JSON.</div>';
+          return;
+        }
+        try {
+          // Prefer using alphaTab's ModelSerializer if available
+          let scoreObj = null;
+          try {
+            const at = window.alphaTab || {};
+            const ser =
+              at.model && at.model.serialization && at.model.serialization.ModelSerializer
+                ? at.model.serialization.ModelSerializer
+                : at.serialization && at.serialization.ModelSerializer
+                ? at.serialization.ModelSerializer
+                : null;
+            if (ser && typeof ser.deserializeScore === 'function') {
+              scoreObj = ser.deserializeScore(data);
+            }
+          } catch (e) {
+            scoreObj = null;
+          }
+
+          let usedTex = false;
+          if (!scoreObj) {
+            // Try AlphaTex fallback first for robust rendering
+            const tex = toAlphaTex(data);
+            if (tex && typeof api.tex === 'function') {
+              api.tex(tex);
+              usedTex = true;
+            } else {
+              data = normalizeAlphaScore(data);
+            }
+          }
+
+          if (!usedTex) {
+            const payload = scoreObj || data;
+            if (api.renderScore) {
+              api.renderScore(payload);
+            } else if (api.loadScore) {
+              api.loadScore(payload);
+            } else if (api.load) {
+              api.load(payload);
+            }
+          }
+          if (api.render) api.render();
+          setTimeout(() => {
+            const svgEl = el.querySelector('svg');
+            const svg = svgEl ? svgEl.outerHTML : '';
+            if (window.javaConnector && window.javaConnector.onSvgReady) {
+              try {
+                window.javaConnector.onSvgReady(svg);
+              } catch (e) {
+                /* ignored */
+              }
+            }
+          }, 100);
+        } catch (e) {
+          el.innerHTML = '<div style="padding:12px">Render error: ' + (e && e.message ? e.message : e) + '</div>';
+        }
+      }
+
+      function exportSvg() {
+        const svgEl = document.getElementById('at').querySelector('svg');
+        return svgEl ? svgEl.outerHTML : '';
+      }
+
+      window.renderScore = renderScore;
+      window.exportSvg = exportSvg;
+    </script>
+  </body>
+</html>

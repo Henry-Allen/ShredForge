@@ -1,12 +1,11 @@
 package com.shredforge;
 
 import com.shredforge.core.ShredforgeFacade;
-import com.shredforge.core.model.FormattedTab;
 import com.shredforge.core.model.TabData;
 import com.shredforge.scoring.TabNoteParser;
 import com.shredforge.scoring.model.TabNote;
-import com.shredforge.tabview.TabPlaybackController;
-import com.shredforge.tabview.render.SongsterrTabFormatter;
+import com.shredforge.tabview.AlphaTabRenderer;
+import com.shredforge.tabview.SongsterrToAlphaTab;
 import com.shredforge.tabs.model.SavedTabSummary;
 import com.shredforge.tabs.model.TabSearchResult;
 import com.shredforge.tabs.model.TabSelection;
@@ -30,12 +29,12 @@ import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.web.WebView;
 
 public class PrimaryController {
-    private final TabPlaybackController playbackController = new TabPlaybackController();
     private final ObservableList<TabListItem> tabOptions = FXCollections.observableArrayList();
     private final ExecutorService ioExecutor = Executors.newFixedThreadPool(3, r -> {
         Thread t = new Thread(r, "shredforge-ui-worker");
@@ -74,6 +73,9 @@ public class PrimaryController {
     private Rectangle playbackIndicator;
 
     @FXML
+    private StackPane modalOverlay;
+
+    @FXML
     private Button playPauseButton;
 
     @FXML
@@ -88,6 +90,8 @@ public class PrimaryController {
     @FXML
     private Label scoreStatsLabel;
 
+    private AlphaTabRenderer alphaTabRenderer;
+
     private AnimationTimer playbackTimer;
     private boolean playing;
     private double tempoMultiplier = 1.0;
@@ -97,7 +101,6 @@ public class PrimaryController {
     private long playbackStartNano;
 
     private TabData currentTabData;
-    private FormattedTab currentFormattedTab;
     private List<TabNote> currentNotes = List.of();
     private TabListItem lastRequestedItem;
 
@@ -108,9 +111,9 @@ public class PrimaryController {
         configureTempoSlider();
         configurePlaybackOverlay();
         initPlaybackTimer();
-        tabPreview.getEngine().loadContent(
-                SongsterrTabFormatter.renderMessage("Search online or browse saved tabs to begin."),
-                "text/html");
+        alphaTabRenderer = new AlphaTabRenderer();
+        alphaTabRenderer.attachTo(tabPreview);
+        alphaTabRenderer.loadAlphaTab();
         updatePlaybackUI();
     }
 
@@ -160,7 +163,7 @@ public class PrimaryController {
 
     @FXML
     private void onPlayPause() {
-        if (currentFormattedTab == null) {
+        if (currentTabData == null) {
             searchStatusLabel.setText("Load a tab before starting playback.");
             return;
         }
@@ -189,12 +192,26 @@ public class PrimaryController {
     }
 
     @FXML
-    private void onOpenCalibration() {
-        App.showCalibration();
+    private void openSearchModal() {
+        if (modalOverlay != null) {
+            modalOverlay.setVisible(true);
+            modalOverlay.toFront();
+        }
+    }
+
+    @FXML
+    private void closeModal() {
+        if (modalOverlay != null) {
+            modalOverlay.setVisible(false);
+        }
     }
 
     @FXML
     private void listSavedTabs() {
+        if (modalOverlay != null && !modalOverlay.isVisible()) {
+            modalOverlay.setVisible(true);
+            modalOverlay.toFront();
+        }
         runAsync(
                 App.repository()::listSavedTabs,
                 saved -> {
@@ -323,9 +340,8 @@ public class PrimaryController {
         }
         try {
             this.currentTabData = tabData;
-            this.currentFormattedTab = App.repository().formatTab(tabData);
-            playbackController.load(currentFormattedTab);
-            tabPreview.getEngine().loadContent(currentFormattedTab.documentHtml(), "text/html");
+            String alphaScoreJson = SongsterrToAlphaTab.convert(tabData.rawContent());
+            alphaTabRenderer.renderFromSongsterrJson(alphaScoreJson);
             this.currentNotes = tabNoteParser.parse(tabData);
             this.playbackDurationMs = currentNotes.isEmpty()
                     ? 0
