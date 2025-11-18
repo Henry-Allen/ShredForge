@@ -18,6 +18,10 @@
         height: 100%;
         overflow: auto;
       }
+      /* Fallback: force text to white in case attribute-based recolor misses something */
+      #at svg text {
+        fill: #ffffff !important;
+      }
       .hidden {
         display: none;
       }
@@ -54,7 +58,23 @@
           el.innerHTML = '<div style="padding:12px">AlphaTab library not loaded.</div>';
           return null;
         }
-        api = new window.alphaTab.AlphaTabApi(el, { engine: 'svg', player: { enablePlayer: false } });
+        api = new window.alphaTab.AlphaTabApi(el, {
+          engine: 'svg',
+          player: { enablePlayer: false },
+          // Tabs-only, rhythm below, and force white resources (per alphaTab discussion #1558)
+          display: {
+            staveProfile: 'Tab',
+            resources: {
+              staffLineColor: '#dddddd',
+              barSeparatorColor: '#dddddd',
+              mainGlyphColor: '#dddddd',
+              secondaryGlyphColor: '#dddddd',
+              scoreInfoColor: '#dddddd',
+              barNumberColor: '#dddddd',
+            },
+          },
+          tablature: { rhythm: { position: 'Below' } },
+        });
         if (api.renderFinished && api.renderFinished.on) {
           api.renderFinished.on(() => {
             const svgEl = el.querySelector('svg');
@@ -172,11 +192,67 @@
             }
             parts.push(beatTokens.join(' '));
           }
-          return parts.join(' | ');
+          const title = data.title || (data.song && data.song.title) || (t && t.name) || 'Guitar';
+          const header = `\\track "${title}" \\staff{tabs} `;
+          return header + parts.join(' | ');
         } catch (e) {
           return null;
         }
       }
+
+      // old chat gpt method (probably dont need)(keep just in case)(for now)
+
+      // function applyDarkTheme(svgEl) {
+      //   if (!svgEl) return;
+      //   try {
+      //     // Ensure currentColor-based paints resolve to white
+      //     svgEl.style.color = '#ffffff';
+      //     // Inject a style override inside the SVG to catch any missed elements
+      //     const styleNode = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+      //     styleNode.setAttribute('id', 'at-dark-style');
+      //     styleNode.textContent = `
+      //       path, line, polyline, polygon, rect, circle, ellipse, use { stroke: #ffffff !important; }
+      //       text, tspan { fill: #ffffff !important; }
+      //       *[fill='none'] { fill: none !important; }
+      //     `;
+      //     if (!svgEl.querySelector('#at-dark-style')) {
+      //       svgEl.insertBefore(styleNode, svgEl.firstChild);
+      //     }
+
+      //     const shapeSel = 'path,line,polyline,polygon,rect,circle,ellipse,use,g';
+      //     svgEl.querySelectorAll(shapeSel).forEach((el) => {
+      //       el.style.stroke = '#ffffff';
+      //       const fillAttr = el.getAttribute('fill');
+      //       const computed = window.getComputedStyle ? getComputedStyle(el) : null;
+      //       const computedFill = computed ? computed.fill : null;
+      //       const isNone = (fillAttr && fillAttr.toLowerCase() === 'none') || (computedFill && computedFill === 'none');
+      //       if (!isNone) {
+      //         el.style.fill = '#ffffff';
+      //       }
+      //       // Also set attributes directly in case inline styles are not honored by some glyphs
+      //       if (el.hasAttribute('stroke')) el.setAttribute('stroke', '#ffffff');
+      //       if (el.hasAttribute('fill') && fillAttr && fillAttr.toLowerCase() !== 'none') el.setAttribute('fill', '#ffffff');
+      //     });
+      //     // Also recolor definitions so <use> clones adopt white from source shapes
+      //     const defs = svgEl.querySelectorAll('defs *');
+      //     defs.forEach((el) => {
+      //       if (el.tagName === 'style') return;
+      //       el.style.stroke = '#ffffff';
+      //       const fillAttr = el.getAttribute('fill');
+      //       const isNone = fillAttr && fillAttr.toLowerCase() === 'none';
+      //       if (!isNone) {
+      //         el.style.fill = '#ffffff';
+      //       }
+      //       if (el.hasAttribute('stroke')) el.setAttribute('stroke', '#ffffff');
+      //       if (el.hasAttribute('fill') && !isNone) el.setAttribute('fill', '#ffffff');
+      //     });
+      //     svgEl.querySelectorAll('text,tspan').forEach((t) => {
+      //       t.style.fill = '#ffffff';
+      //     });
+      //   } catch (e) {
+      //     /* ignore */
+      //   }
+      // }
 
       function renderScore(alphaTabScoreJson) {
         const el = document.getElementById('at');
@@ -232,6 +308,7 @@
           if (api.render) api.render();
           setTimeout(() => {
             const svgEl = el.querySelector('svg');
+            // applyDarkTheme(svgEl);
             const svg = svgEl ? svgEl.outerHTML : '';
             if (window.javaConnector && window.javaConnector.onSvgReady) {
               try {
