@@ -78,6 +78,7 @@
         if (api.renderFinished && api.renderFinished.on) {
           api.renderFinished.on(() => {
             const svgEl = el.querySelector('svg');
+            normalizeArcOrientation(svgEl);
             const svg = svgEl ? svgEl.outerHTML : '';
             if (window.javaConnector && window.javaConnector.onSvgReady) {
               try {
@@ -176,15 +177,27 @@
               }
               if (notes.length === 1) {
                 const n = notes[0];
-                const fret = typeof n.fret === 'number' ? n.fret : 0;
+                const tie = !!n.tie;
+                const fret = tie ? '-' : typeof n.fret === 'number' ? n.fret : 0;
                 const string = typeof n.string === 'number' ? n.string : 1;
-                beatTokens.push(fret + '.' + string + '.' + den);
+                const hasH = !!(n.hammerOn || n.pullOff);
+                const base = fret + '.' + string;
+                const withEff = hasH ? base + '{h}' : base;
+                beatTokens.push(withEff + '.' + den);
               } else {
-                const chord = notes
+                // Sort by string to keep consistent order for chord ties
+                const chordNotes = notes.slice().sort((a, b) => {
+                  const sa = typeof a.string === 'number' ? a.string : 1;
+                  const sb = typeof b.string === 'number' ? b.string : 1;
+                  return sa - sb;
+                });
+                const chord = chordNotes
                   .map((n) => {
-                    const fret = typeof n.fret === 'number' ? n.fret : 0;
+                    const tie = !!n.tie;
+                    const fret = tie ? '-' : typeof n.fret === 'number' ? n.fret : 0;
                     const string = typeof n.string === 'number' ? n.string : 1;
-                    return fret + '.' + string;
+                    const hasH = !!(n.hammerOn || n.pullOff);
+                    return hasH ? fret + '.' + string + '{h}' : fret + '.' + string;
                   })
                   .join(' ');
                 beatTokens.push('(' + chord + ').' + den);
@@ -200,59 +213,177 @@
         }
       }
 
+      function normalizeArcOrientation(svgEl) {
+        if (!svgEl) return;
+        const getStaffMid = () => {
+          try {
+            const lines = Array.from(svgEl.querySelectorAll('line')).filter((l) => (l.getAttribute('x1') || '') !== (l.getAttribute('x2') || ''));
+            const ys = lines.map((l) => parseFloat(l.getAttribute('y1') || '0')).sort((a, b) => a - b);
+            return ys.length >= 2 ? (ys[0] + ys[ys.length - 1]) / 2 : null;
+          } catch (e) {
+            return null;
+          }
+        };
+        const isArcUp = (path) => {
+          const d = path.getAttribute('d') || '';
+          // Look for first cubic or quadratic segment
+          const m = d.match(/[CQ]\s*([\d.+-eE]+)[,\s]([\d.+-eE]+)\s+([\d.+-eE]+)[,\s]([\d.+-eE]+)\s+([\d.+-eE]+)[,\s]([\d.+-eE]+)/);
+          const ms = d.match(/M\s*([\d.+-eE]+)[,\s]([\d.+-eE]+)/);
+          if (m && ms) {
+            const y1 = parseFloat(m[2]);
+            const y2 = parseFloat(m[4]);
+            const ye = parseFloat(m[6]);
+            const ys = parseFloat(ms[2]);
+            const ctrlAvg = (y1 + y2) / 2;
+            const endAvg = (ys + ye) / 2;
+            // SVG y goes downwards: smaller y = above. If control avg is smaller => arc bulges up
+            return ctrlAvg < endAvg;
+          }
+          // Fallback for non-Q/C paths (e.g., elliptical A paths): compare bbox center to staff mid
+          try {
+            const bb = path.getBBox();
+            const cy = bb.y + bb.height / 2;
+            const mid = getStaffMid();
+            if (mid == null) return null;
+            return cy < mid;
+          } catch (e) {
+            return null;
+          }
+        };
+        const isArcCandidatePath = (path) => {
+          const d = path.getAttribute('d') || '';
+          // Must be a curve and typically no fill
+          if (!/[CQ]/.test(d)) return false;
+          const fill = (path.getAttribute('fill') || '').toLowerCase();
+          if (fill && fill !== 'none') return false;
+          try {
+            const bb = path.getBBox();
+            const thin = bb.height <= 40; // relaxed
+            const wide = bb.width >= 8;
+            return thin && wide;
+          } catch (e) {
+            return false;
+          }
+        };
+        const isArcCandidateUse = (useEl) => {
+          try {
+            const bb = useEl.getBBox();
+            const thin = bb.height <= 40;
+            const wide = bb.width >= 8;
+            // <use> clones of glyphs usually have no fill attribute set
+            return thin && wide;
+          } catch (e) {
+            return false;
+          }
+        };
+        const hasHpLabelNear = (path) => {
+          try {
+            const pb = path.getBBox();
+            const cx = pb.x + pb.width / 2;
+            const cy = pb.y + pb.height / 2;
+            const texts = svgEl.querySelectorAll('text');
+            for (const t of texts) {
+              const txt = (t.textContent || '').trim().toUpperCase();
+              if (txt !== 'H' && txt !== 'P') continue;
+              const tb = t.getBBox();
+              const tx = tb.x + tb.width / 2;
+              const ty = tb.y + tb.height / 2;
+              const dx = Math.abs(tx - cx);
+              const dy = Math.abs(ty - cy);
+              if (dx < 40 && dy < 30) return true;
+            }
+          } catch (e) {
+            /* ignore */
+          }
+          return false;
+        };
+        const flipVert = (el) => {
+          const bb = el.getBBox();
+          const cx = bb.x + bb.width / 2;
+          const cy = bb.y + bb.height / 2;
+          const prev = el.getAttribute('transform') || '';
+          if (prev.includes('scale(1 -1)')) return; // already flipped
+          const t = ` translate(${cx} ${cy}) scale(1 -1) translate(${-cx} ${-cy})`;
+          el.setAttribute('transform', prev + t);
+          el.setAttribute('data-flipped', '1');
+        };
+        // Find likely tie/slur shapes and normalize direction
+        // 1) Paths with curves
+        svgEl.querySelectorAll('path').forEach((p) => {
+          if (!isArcCandidatePath(p)) return;
+          const up = isArcUp(p);
+          if (up === null) return;
+          const clsSelf = (p.getAttribute('class') || '').toLowerCase();
+          const parent = p.parentNode && p.parentNode.tagName === 'g' ? p.parentNode : null;
+          const clsParent = parent ? (parent.getAttribute('class') || '').toLowerCase() : '';
+          const combined = clsSelf + ' ' + clsParent;
+          const isTieClass = combined.includes('tie');
+          const isSlurClass = combined.includes('slur') || combined.includes('hammer') || combined.includes('pull');
+          const isHp = isSlurClass || hasHpLabelNear(p);
+          const target = parent && (isTieClass || isSlurClass) ? parent : p;
+          if (isHp) {
+            if (!up) flipVert(target);
+          } else {
+            if (up) flipVert(target);
+          }
+        });
+        // 2) <use> glyph clones (some builds draw ties/slurs as glyphs)
+        svgEl.querySelectorAll('use').forEach((u) => {
+          if (!isArcCandidateUse(u)) return;
+          // We cannot parse 'd' from <use>, approximate using bbox: if center Y above tab middle, treat as up.
+          let up = null;
+          try {
+            const bb = u.getBBox();
+            const cy = bb.y + bb.height / 2;
+            // Estimate staff middle from the median of horizontal lines
+            const lines = Array.from(svgEl.querySelectorAll('line')).filter((l) => (l.getAttribute('x1') || '') !== (l.getAttribute('x2') || ''));
+            const ys = lines.map((l) => parseFloat(l.getAttribute('y1') || '0')).sort((a, b) => a - b);
+            const mid = ys.length >= 2 ? (ys[0] + ys[ys.length - 1]) / 2 : cy;
+            up = cy < mid;
+          } catch (e) {
+            up = null;
+          }
+          if (up === null) return;
+          const clsSelf = (u.getAttribute('class') || '').toLowerCase();
+          const parent = u.parentNode && u.parentNode.tagName === 'g' ? u.parentNode : null;
+          const clsParent = parent ? (parent.getAttribute('class') || '').toLowerCase() : '';
+          const combined = clsSelf + ' ' + clsParent;
+          const isTieClass = combined.includes('tie');
+          const isSlurClass = combined.includes('slur') || combined.includes('hammer') || combined.includes('pull');
+          const isHp = isSlurClass || hasHpLabelNear(u);
+          const target = parent && (isTieClass || isSlurClass) ? parent : u;
+          if (isHp) {
+            if (!up) flipVert(target);
+          } else {
+            if (up) flipVert(target);
+          }
+        });
+      }
+
       // old chat gpt method (probably dont need)(keep just in case)(for now)
 
-      // function applyDarkTheme(svgEl) {
-      //   if (!svgEl) return;
-      //   try {
-      //     // Ensure currentColor-based paints resolve to white
-      //     svgEl.style.color = '#ffffff';
-      //     // Inject a style override inside the SVG to catch any missed elements
-      //     const styleNode = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-      //     styleNode.setAttribute('id', 'at-dark-style');
-      //     styleNode.textContent = `
-      //       path, line, polyline, polygon, rect, circle, ellipse, use { stroke: #ffffff !important; }
-      //       text, tspan { fill: #ffffff !important; }
-      //       *[fill='none'] { fill: none !important; }
-      //     `;
-      //     if (!svgEl.querySelector('#at-dark-style')) {
-      //       svgEl.insertBefore(styleNode, svgEl.firstChild);
-      //     }
+      function applyDarkTheme(svgEl) {
+        if (!svgEl) return;
+        try {
+          // Ensure currentColor-based paints resolve to white
+          svgEl.style.color = '#ffffff';
+          // Inject a style override inside the SVG to catch any missed elements
+          const styleNode = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+          styleNode.setAttribute('id', 'at-dark-style');
+          styleNode.textContent = `
+            path, line, polyline, polygon, rect, circle, ellipse, use { stroke: #ffffff !important; }
+            text, tspan { fill: #ffffff !important; }
+            *[fill='none'] { fill: none !important; }
+          `;
+          if (!svgEl.querySelector('#at-dark-style')) {
+            svgEl.insertBefore(styleNode, svgEl.firstChild);
+          }
+        } catch (e) {
+          /* ignore */
+        }
+      }
 
-      //     const shapeSel = 'path,line,polyline,polygon,rect,circle,ellipse,use,g';
-      //     svgEl.querySelectorAll(shapeSel).forEach((el) => {
-      //       el.style.stroke = '#ffffff';
-      //       const fillAttr = el.getAttribute('fill');
-      //       const computed = window.getComputedStyle ? getComputedStyle(el) : null;
-      //       const computedFill = computed ? computed.fill : null;
-      //       const isNone = (fillAttr && fillAttr.toLowerCase() === 'none') || (computedFill && computedFill === 'none');
-      //       if (!isNone) {
-      //         el.style.fill = '#ffffff';
-      //       }
-      //       // Also set attributes directly in case inline styles are not honored by some glyphs
-      //       if (el.hasAttribute('stroke')) el.setAttribute('stroke', '#ffffff');
-      //       if (el.hasAttribute('fill') && fillAttr && fillAttr.toLowerCase() !== 'none') el.setAttribute('fill', '#ffffff');
-      //     });
-      //     // Also recolor definitions so <use> clones adopt white from source shapes
-      //     const defs = svgEl.querySelectorAll('defs *');
-      //     defs.forEach((el) => {
-      //       if (el.tagName === 'style') return;
-      //       el.style.stroke = '#ffffff';
-      //       const fillAttr = el.getAttribute('fill');
-      //       const isNone = fillAttr && fillAttr.toLowerCase() === 'none';
-      //       if (!isNone) {
-      //         el.style.fill = '#ffffff';
-      //       }
-      //       if (el.hasAttribute('stroke')) el.setAttribute('stroke', '#ffffff');
-      //       if (el.hasAttribute('fill') && !isNone) el.setAttribute('fill', '#ffffff');
-      //     });
-      //     svgEl.querySelectorAll('text,tspan').forEach((t) => {
-      //       t.style.fill = '#ffffff';
-      //     });
-      //   } catch (e) {
-      //     /* ignore */
-      //   }
-      // }
+      // old chat gpt method (probably dont need)(keep just in case)(for now)
 
       function renderScore(alphaTabScoreJson) {
         const el = document.getElementById('at');
@@ -308,6 +439,7 @@
           if (api.render) api.render();
           setTimeout(() => {
             const svgEl = el.querySelector('svg');
+            normalizeArcOrientation(svgEl);
             // applyDarkTheme(svgEl);
             const svg = svgEl ? svgEl.outerHTML : '';
             if (window.javaConnector && window.javaConnector.onSvgReady) {

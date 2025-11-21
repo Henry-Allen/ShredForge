@@ -51,7 +51,15 @@ public class AlphaTabRenderer {
             try { latch.await(2, TimeUnit.SECONDS); } catch (InterruptedException ignored) {}
         }
         String arg = toJsString(json == null ? "" : json);
-        Platform.runLater(() -> engine.executeScript("renderScore(" + arg + ")"));
+        // Defer invocation until renderScore is defined in the page
+        String script = "(function(json){\n" +
+                "  function tryCall(){\n" +
+                "    if (typeof renderScore === 'function'){ renderScore(json); }\n" +
+                "    else { setTimeout(tryCall, 100); }\n" +
+                "  }\n" +
+                "  tryCall();\n" +
+                "})(" + arg + ");";
+        Platform.runLater(() -> engine.executeScript(script));
     }
 
     public String getRenderedSvg() {
