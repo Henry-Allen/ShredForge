@@ -1,18 +1,23 @@
 package com.shredforge.core;
 
+import com.shredforge.core.model.AudioDeviceInfo;
 import com.shredforge.core.model.CalibrationInput;
 import com.shredforge.calibration.SimpleCalibrationService;
 import com.shredforge.calibration.SimpleSignalProcessor;
 import com.shredforge.calibration.TuningLibrary;
 import com.shredforge.calibration.TuningPreset;
 import com.shredforge.core.model.CalibrationProfile;
+import com.shredforge.core.model.ExpectedNote;
 import com.shredforge.core.model.FormattedTab;
+import com.shredforge.core.model.LiveScoreSnapshot;
+import com.shredforge.core.model.PracticeConfig;
 import com.shredforge.core.model.SessionRequest;
 import com.shredforge.core.model.SessionResult;
 import com.shredforge.core.model.SongRequest;
 import com.shredforge.core.model.TabData;
-import com.shredforge.core.ports.CalibrationService;
+import com.shredforge.core.ports.PracticeScoringService;
 import com.shredforge.core.ports.SessionScoringService;
+import com.shredforge.scoring.LivePracticeScoringService;
 import com.shredforge.tabs.TabManager;
 import com.shredforge.tabview.TabRenderingService;
 import com.shredforge.tabs.model.SongSelection;
@@ -22,9 +27,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
 
 /**
  * Primary entry point for UI/controllers. Wraps {@link ShredforgeFacade} and exposes high-level operations the UI can
@@ -34,10 +39,14 @@ public final class ShredforgeRepository {
 
     private final ShredforgeFacade facade;
     private final TabManager tabManager;
+    private final PracticeScoringService practiceScoringService;
 
     private ShredforgeRepository(Builder builder) {
         this.tabManager = builder.tabManager != null ? builder.tabManager : TabManager.createDefault();
         this.facade = builder.facade != null ? builder.facade : defaultFacade(tabManager);
+        this.practiceScoringService = builder.practiceScoringService != null 
+                ? builder.practiceScoringService 
+                : new LivePracticeScoringService();
     }
 
     public static Builder builder() {
@@ -80,6 +89,107 @@ public final class ShredforgeRepository {
     public CompletableFuture<TabData> downloadGpFile(SongSelection selection) {
         return tabManager.downloadOrGetCached(selection);
     }
+
+    // ==================== Practice Session API ====================
+
+    /**
+     * Lists available audio input devices for practice mode.
+     */
+    public List<AudioDeviceInfo> listAudioDevices() {
+        return practiceScoringService.listAudioDevices();
+    }
+
+    /**
+     * Loads expected notes extracted from AlphaTab for the current song.
+     * Called when AlphaTab finishes loading a score.
+     *
+     * @param notes list of expected notes from the score
+     * @param totalDurationMs total duration of the song in milliseconds
+     */
+    public void loadExpectedNotes(List<ExpectedNote> notes, double totalDurationMs) {
+        practiceScoringService.loadExpectedNotes(notes, totalDurationMs);
+    }
+
+    /**
+     * Starts a practice session with the given configuration.
+     *
+     * @param config practice configuration including audio device and tolerances
+     * @param snapshotListener callback invoked periodically with score updates
+     */
+    public void startPracticeSession(PracticeConfig config, Consumer<LiveScoreSnapshot> snapshotListener) {
+        practiceScoringService.startSession(config, snapshotListener);
+    }
+
+    /**
+     * Sets a listener for note hit/miss events (for visual feedback in AlphaTab).
+     * Must be called before starting a practice session.
+     */
+    public void setNoteResultListener(LivePracticeScoringService.NoteResultListener listener) {
+        if (practiceScoringService instanceof LivePracticeScoringService liveService) {
+            liveService.setNoteResultListener(listener);
+        }
+    }
+
+    /**
+     * Updates the current playback position from AlphaTab.
+     * Called frequently during playback to sync scoring with the tab.
+     *
+     * @param positionMs current playback position in milliseconds
+     */
+    public void updatePlaybackPosition(double positionMs) {
+        practiceScoringService.updatePlaybackPosition(positionMs);
+    }
+
+    /**
+     * Pauses the practice session.
+     */
+    public void pausePracticeSession() {
+        practiceScoringService.pauseSession();
+    }
+
+    /**
+     * Resumes a paused practice session.
+     */
+    public void resumePracticeSession() {
+        practiceScoringService.resumeSession();
+    }
+
+    /**
+     * Stops the practice session and returns the final score snapshot.
+     */
+    public LiveScoreSnapshot stopPracticeSession() {
+        return practiceScoringService.stopSession();
+    }
+
+    /**
+     * Returns the current score snapshot without stopping the session.
+     */
+    public LiveScoreSnapshot getCurrentScore() {
+        return practiceScoringService.getCurrentSnapshot();
+    }
+
+    /**
+     * Returns true if a practice session is currently active.
+     */
+    public boolean isPracticeSessionActive() {
+        return practiceScoringService.isSessionActive();
+    }
+
+    /**
+     * Resets the practice session for a new attempt without reloading notes.
+     */
+    public void resetPracticeSession() {
+        practiceScoringService.resetSession();
+    }
+
+    /**
+     * Returns the default practice configuration.
+     */
+    public PracticeConfig defaultPracticeConfig() {
+        return PracticeConfig.defaults();
+    }
+
+    // ==================== End Practice Session API ====================
 
     /**
      * Runs a canned happy-path flow that exercises every subsystem. Used by the temporary testing UI.
@@ -124,6 +234,7 @@ public final class ShredforgeRepository {
     public static final class Builder {
         private ShredforgeFacade facade;
         private TabManager tabManager;
+        private PracticeScoringService practiceScoringService;
 
         public Builder withFacade(ShredforgeFacade facade) {
             this.facade = Objects.requireNonNull(facade, "facade");
@@ -132,6 +243,11 @@ public final class ShredforgeRepository {
 
         public Builder withTabManager(TabManager tabManager) {
             this.tabManager = Objects.requireNonNull(tabManager, "tabManager");
+            return this;
+        }
+
+        public Builder withPracticeScoringService(PracticeScoringService service) {
+            this.practiceScoringService = Objects.requireNonNull(service, "practiceScoringService");
             return this;
         }
 

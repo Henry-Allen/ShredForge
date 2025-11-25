@@ -136,6 +136,66 @@
       .hidden {
         display: none;
       }
+      /* Practice feedback overlay */
+      #practice-feedback {
+        position: fixed;
+        top: 60px;
+        right: 10px;
+        width: 180px;
+        background: rgba(0, 0, 0, 0.85);
+        border-radius: 8px;
+        padding: 10px;
+        z-index: 1000;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        display: none;
+      }
+      #practice-feedback.active {
+        display: block;
+      }
+      #practice-feedback h4 {
+        margin: 0 0 8px 0;
+        font-size: 12px;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .feedback-item {
+        padding: 4px 8px;
+        margin: 3px 0;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        animation: fadeIn 0.2s ease-out;
+      }
+      .feedback-item.hit {
+        background: rgba(34, 197, 94, 0.3);
+        color: #22c55e;
+        border-left: 3px solid #22c55e;
+      }
+      .feedback-item.missed {
+        background: rgba(239, 68, 68, 0.3);
+        color: #ef4444;
+        border-left: 3px solid #ef4444;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateX(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+      /* Flash effect on cursor for hits/misses */
+      .cursor-flash-hit {
+        box-shadow: 0 0 20px 5px rgba(34, 197, 94, 0.8) !important;
+        background: #22c55e !important;
+      }
+      .cursor-flash-miss {
+        box-shadow: 0 0 20px 5px rgba(239, 68, 68, 0.8) !important;
+        background: #ef4444 !important;
+      }
     </style>
     <script>
       (function () {
@@ -174,6 +234,11 @@
       </div>
       <div id="at-container">
         <div id="at"></div>
+      </div>
+      <!-- Practice feedback overlay -->
+      <div id="practice-feedback">
+        <h4>Live Feedback</h4>
+        <div id="feedback-list"></div>
       </div>
     </div>
     <script>
@@ -372,6 +437,19 @@
                 // Use renderTracks to show only the selected track
                 api.renderTracks([score.tracks[trackIndex]]);
                 console.log('Switched to track:', trackIndex, score.tracks[trackIndex].name);
+
+                // Notify Java about track change so it can re-extract notes if in practice mode
+                if (window.cefQuery) {
+                  window.cefQuery({
+                    request: 'trackChanged:' + trackIndex,
+                    onSuccess: function (response) {
+                      console.log('Track change notified to Java');
+                    },
+                    onFailure: function (errorCode, errorMessage) {
+                      // Ignore failures - Java may not be listening
+                    },
+                  });
+                }
               }
             }
           });
@@ -780,6 +858,15 @@
             if (typeof e.currentTime === 'number') {
               playerPositionMs = e.currentTime;
               updateProgressState();
+
+              // Send position to Java for practice mode scoring sync
+              if (window.cefQuery) {
+                window.cefQuery({
+                  request: 'playbackPosition:' + playerPositionMs,
+                  onSuccess: function (response) {},
+                  onFailure: function (errorCode, errorMessage) {},
+                });
+              }
             }
           });
         }
@@ -930,6 +1017,287 @@
           /* ignore load errors; Java side shows status */
         }
       };
+
+      // ==================== Practice Mode Functions ====================
+
+      /**
+       * Gets the currently selected track index from the track selector dropdown.
+       * Returns 0 if no track is selected or the selector doesn't exist.
+       */
+      window.getCurrentTrackIndex = function () {
+        const select = document.getElementById('at-track-select');
+        if (select && select.value !== '') {
+          const idx = parseInt(select.value, 10);
+          return isNaN(idx) ? 0 : idx;
+        }
+        return 0;
+      };
+
+      /**
+       * Extracts all notes from the currently loaded score for practice mode scoring.
+       * If trackIndex is not provided, uses the currently selected track.
+       * Returns JSON array of note objects with timing and pitch info.
+       */
+      window.extractNotesForScoring = function (trackIndex) {
+        try {
+          const api = ensureApi();
+          if (!api || !api.score) {
+            console.log('No score loaded for note extraction');
+            return '[]';
+          }
+
+          const score = api.score;
+          const notes = [];
+          // Use provided trackIndex, or fall back to currently selected track
+          const targetTrackIndex = typeof trackIndex === 'number' ? trackIndex : window.getCurrentTrackIndex();
+
+          if (!score.tracks || score.tracks.length === 0) {
+            return '[]';
+          }
+
+          const track = score.tracks[Math.min(targetTrackIndex, score.tracks.length - 1)];
+          if (!track || !track.staves) {
+            return '[]';
+          }
+
+          // Get master bars for timing info - they contain the actual tempo and time signature
+          const masterBars = score.masterBars || [];
+
+          // Calculate cumulative time for each master bar
+          // AlphaTab uses ticks internally, we need to convert to ms
+          const ticksPerBeat = 960; // AlphaTab default MIDI ticks per quarter note
+          let cumulativeTimeMs = 0;
+          const barStartTimes = []; // Start time of each bar in ms
+
+          for (let i = 0; i < masterBars.length; i++) {
+            const mb = masterBars[i];
+            barStartTimes.push(cumulativeTimeMs);
+
+            // Get tempo for this bar (may change mid-song)
+            const tempo = mb.tempoAutomation?.value || score.tempo || 120;
+            const msPerTick = 60000 / tempo / ticksPerBeat;
+
+            // Calculate bar duration based on time signature
+            const numerator = mb.timeSignatureNumerator || 4;
+            const denominator = mb.timeSignatureDenominator || 4;
+            const beatsInBar = numerator * (4 / denominator); // Convert to quarter note beats
+            const barDurationTicks = beatsInBar * ticksPerBeat;
+            const barDurationMs = barDurationTicks * msPerTick;
+
+            cumulativeTimeMs += barDurationMs;
+          }
+
+          console.log('Bar start times (first 10):', barStartTimes.slice(0, 10));
+
+          let measureIndex = 0;
+          for (const staff of track.staves) {
+            if (!staff.bars) continue;
+
+            for (const bar of staff.bars) {
+              if (!bar.voices) {
+                measureIndex++;
+                continue;
+              }
+
+              // Get the start time for this bar
+              const barStartMs = barStartTimes[measureIndex] || 0;
+
+              // Get tempo for this bar
+              const mb = masterBars[measureIndex];
+              const tempo = mb?.tempoAutomation?.value || score.tempo || 120;
+              const msPerTick = 60000 / tempo / ticksPerBeat;
+
+              let beatIndex = 0;
+              for (const voice of bar.voices) {
+                if (!voice.beats) continue;
+
+                for (const beat of voice.beats) {
+                  if (!beat.notes || beat.notes.length === 0) {
+                    beatIndex++;
+                    continue;
+                  }
+
+                  // Calculate timing relative to bar start
+                  // beat.playbackStart is in ticks from the start of the bar
+                  const beatStartTicks = beat.playbackStart || 0;
+                  const durationTicks = beat.playbackDuration || ticksPerBeat;
+                  const timeMs = barStartMs + beatStartTicks * msPerTick;
+                  const durationMs = durationTicks * msPerTick;
+
+                  for (const note of beat.notes) {
+                    if (note.isRest) continue;
+
+                    const midi = note.realValue || 0;
+                    const string = note.string || 0;
+                    const fret = note.fret || 0;
+
+                    notes.push({
+                      timeMs: Math.max(0, timeMs),
+                      durationMs: Math.max(0, durationMs),
+                      midi: midi,
+                      string: string,
+                      fret: fret,
+                      measureIndex: measureIndex,
+                      beatIndex: beatIndex,
+                      noteName: midiToNoteName(midi),
+                    });
+                  }
+                  beatIndex++;
+                }
+              }
+              measureIndex++;
+            }
+          }
+
+          // Sort by time
+          notes.sort((a, b) => a.timeMs - b.timeMs);
+
+          console.log('Extracted ' + notes.length + ' notes for scoring');
+          return JSON.stringify(notes);
+        } catch (e) {
+          console.error('Error extracting notes:', e);
+          return '[]';
+        }
+      };
+
+      /**
+       * Gets the total duration of the current score in milliseconds.
+       */
+      window.getScoreDurationMs = function () {
+        try {
+          return playerDurationMs || 0;
+        } catch (e) {
+          return 0;
+        }
+      };
+
+      /**
+       * Gets the current playback position in milliseconds.
+       */
+      window.getPlaybackPositionMs = function () {
+        try {
+          return playerPositionMs || 0;
+        } catch (e) {
+          return 0;
+        }
+      };
+
+      /**
+       * Converts MIDI note number to note name.
+       */
+      function midiToNoteName(midi) {
+        if (midi < 0 || midi > 127) return '--';
+        const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const noteIndex = midi % 12;
+        const octave = Math.floor(midi / 12) - 1;
+        return names[noteIndex] + octave;
+      }
+
+      /**
+       * Shows the practice feedback panel.
+       */
+      window.showPracticeFeedback = function () {
+        const panel = document.getElementById('practice-feedback');
+        if (panel) {
+          panel.classList.add('active');
+        }
+      };
+
+      /**
+       * Hides the practice feedback panel.
+       */
+      window.hidePracticeFeedback = function () {
+        const panel = document.getElementById('practice-feedback');
+        if (panel) {
+          panel.classList.remove('active');
+        }
+      };
+
+      /**
+       * Marks a note as hit (green) or missed (red) with visual feedback.
+       * @param {string} noteName - The note name (e.g., "G#4")
+       * @param {boolean} isHit - true for hit (green), false for missed (red)
+       */
+      window.markNoteResult = function (noteName, isHit) {
+        try {
+          // Add to feedback list
+          const feedbackList = document.getElementById('feedback-list');
+          if (feedbackList) {
+            const item = document.createElement('div');
+            item.className = 'feedback-item ' + (isHit ? 'hit' : 'missed');
+            item.textContent = (isHit ? '✓ ' : '✗ ') + noteName;
+
+            // Insert at top
+            feedbackList.insertBefore(item, feedbackList.firstChild);
+
+            // Keep only last 8 items
+            while (feedbackList.children.length > 8) {
+              feedbackList.removeChild(feedbackList.lastChild);
+            }
+          }
+
+          // Flash the cursor
+          const cursor = document.querySelector('.at-cursor-beat');
+          if (cursor) {
+            const flashClass = isHit ? 'cursor-flash-hit' : 'cursor-flash-miss';
+            cursor.classList.add(flashClass);
+            setTimeout(() => {
+              cursor.classList.remove(flashClass);
+            }, 200);
+          }
+        } catch (e) {
+          console.error('Error marking note:', e);
+        }
+      };
+
+      /**
+       * Clears all hit/miss highlighting and feedback.
+       */
+      window.clearNoteHighlights = function () {
+        try {
+          const feedbackList = document.getElementById('feedback-list');
+          if (feedbackList) {
+            feedbackList.innerHTML = '';
+          }
+          window.hidePracticeFeedback();
+        } catch (e) {
+          console.error('Error clearing highlights:', e);
+        }
+      };
+
+      /**
+       * Enables position update callbacks to Java during playback.
+       * Call this to start sending position updates.
+       */
+      let positionUpdateInterval = null;
+      window.startPositionUpdates = function () {
+        if (positionUpdateInterval) {
+          clearInterval(positionUpdateInterval);
+        }
+        positionUpdateInterval = setInterval(function () {
+          if (window.javaConnector && window.javaConnector.onPositionUpdate) {
+            try {
+              window.javaConnector.onPositionUpdate(playerPositionMs || 0);
+            } catch (e) {
+              // Ignore callback errors
+            }
+          }
+        }, 50); // Update every 50ms
+        console.log('Position updates started');
+      };
+
+      /**
+       * Stops position update callbacks.
+       */
+      window.stopPositionUpdates = function () {
+        if (positionUpdateInterval) {
+          clearInterval(positionUpdateInterval);
+          positionUpdateInterval = null;
+        }
+        console.log('Position updates stopped');
+      };
+
+      // ==================== End Practice Mode Functions ====================
     </script>
   </body>
 </html>

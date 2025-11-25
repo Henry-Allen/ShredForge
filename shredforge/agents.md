@@ -10,7 +10,7 @@ It is a single Maven module (`shredforge`) using **Swing + JCEF** (Chromium Embe
 | `com.shredforge.core` | Domain façade, orchestration logic, and immutable DTOs (records). UI code should go through `ShredforgeRepository`, which wraps `ShredforgeFacade` and a `TabManager`. |
 | `com.shredforge.tabs` | Access to remote songs plus GP file downloads. `TabManager` coordinates `TabGetService` (search/download) and `TabDataDao` (JCEF browser automation for GP downloads). Implements the `TabGateway` port used by the core façade. |
 | `com.shredforge.tabview` | Converts `TabData` JSON into visual fragments (`FormattedTab`) that the UI can embed. `TabRenderingService` is the default `TabFormatter`. Also contains `SongsterrToAlphaTab` for JSON conversion. |
-| `com.shredforge.scoring` | Audio analysis (TarsosDSP wrapper), detected-note models, and score calculation utilities that power `SessionScoringService` implementations. |
+| `com.shredforge.scoring` | Audio analysis (TarsosDSP wrapper), detected-note models, and score calculation utilities that power `SessionScoringService` implementations. Includes `LivePracticeScoringService` for real-time practice mode and `CqtNoteDetectionEngine` for CQT-based pitch detection. |
 | `com.shredforge.calibration` | Lightweight tuning helpers: a simplified signal processor, preset tunings, and the default `CalibrationService` implementation used by the façade + UI calibration screen. |
 
 ### Typical Flow
@@ -37,6 +37,10 @@ It is a single Maven module (`shredforge`) using **Swing + JCEF** (Chromium Embe
 | `CalibrationInput` / `CalibrationProfile` | User/device gain and noise information. |
 | `SessionRequest` / `SessionResult` | Inputs & outputs of the practice scoring pipeline. |
 | `SongSelection` | Song-level selection from Songsterr search (contains all tracks). Used for GP file downloads. |
+| `ExpectedNote` | A note expected from the tab at a specific time, extracted from AlphaTab. |
+| `LiveScoreSnapshot` | Real-time scoring state with overall and partial accuracy metrics. |
+| `PracticeConfig` | Configuration for practice sessions (audio device, tolerances, confidence). |
+| `AudioDeviceInfo` | Represents an available audio input device for practice mode. |
 
 ### Adapters & Ports
 
@@ -46,6 +50,7 @@ The core module defines ports so subsystems can be mocked easily:
 * `TabFormatter` – converts `TabData → FormattedTab` (default: `TabRenderingService`).
 * `CalibrationService` – turns `CalibrationInput → CalibrationProfile` (demo implementation inside `ShredforgeRepository`).
 * `SessionScoringService` – runs an evaluated session; there is a `MockSessionScoringService` helper for the UI.
+* `PracticeScoringService` – real-time practice scoring that syncs with AlphaTab playback (default: `LivePracticeScoringService`).
 
 `ShredforgeFacade.Builder` wires these ports together. Tests/agents can drop in alt implementations by supplying their own builders to `ShredforgeRepository`.
 
@@ -71,6 +76,34 @@ java \
 * Java 17+ is required (project uses records & modern APIs).
 * `target/` is gitignored; no custom build tooling beyond Maven.
 * JCEF binaries are downloaded to `~/.shredforge/jcef` on first run (~200MB).
+
+### Practice Mode
+
+Practice mode allows users to play along with a tab and receive real-time scoring feedback:
+
+1. **Note Extraction**: When a GP file is loaded in AlphaTab, JavaScript functions in `index.html` extract all notes with timing information via `window.extractNotesForScoring()`.
+
+2. **Audio Detection**: `CqtNoteDetectionEngine` uses TarsosDSP with spectral analysis (FFT-based, optimized for guitar frequencies 65-1319 Hz) to detect played notes from the selected audio input device.
+
+3. **Scoring**: `LivePracticeScoringService` compares detected notes against expected notes in real-time:
+   - **Overall Accuracy**: Hits / Total notes in song (final score if played completely)
+   - **Partial Accuracy**: Hits / Notes encountered so far (how well you're doing on what you've played)
+   - Configurable pitch tolerance (cents) and timing tolerance (ms)
+
+4. **UI Integration**: `MainFrame` provides:
+   - Audio device selector dropdown
+   - Practice button to start/stop sessions
+   - Live score display with color coding (green ≥90%, yellow ≥70%, red <70%)
+   - Final results dialog with detailed statistics
+
+**Practice Mode API** (via `ShredforgeRepository`):
+```java
+repository.listAudioDevices();                    // Get available audio inputs
+repository.loadExpectedNotes(notes, durationMs);  // Load notes from AlphaTab
+repository.startPracticeSession(config, listener); // Start with callback
+repository.updatePlaybackPosition(positionMs);    // Sync with AlphaTab playback
+repository.stopPracticeSession();                 // Stop and get final score
+```
 
 ### Conventions & Tips
 

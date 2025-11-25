@@ -1,17 +1,25 @@
 package com.shredforge.ui;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shredforge.SwingApp;
 import com.shredforge.core.ShredforgeRepository;
+import com.shredforge.core.model.AudioDeviceInfo;
+import com.shredforge.core.model.ExpectedNote;
+import com.shredforge.core.model.LiveScoreSnapshot;
+import com.shredforge.core.model.PracticeConfig;
 import com.shredforge.tabs.model.SongSelection;
 import org.cef.CefApp;
 import org.cef.CefClient;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
+import org.cef.browser.CefMessageRouter;
 import org.cef.callback.CefBeforeDownloadCallback;
 import org.cef.callback.CefDownloadItem;
 import org.cef.callback.CefDownloadItemCallback;
+import org.cef.callback.CefQueryCallback;
 import org.cef.handler.CefDownloadHandler;
 import org.cef.handler.CefLoadHandlerAdapter;
+import org.cef.handler.CefMessageRouterHandlerAdapter;
 
 import javax.swing.*;
 import java.awt.*;
@@ -21,10 +29,13 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Main application frame with Swing toolbar and JCEF browser for AlphaTab.
@@ -50,6 +61,18 @@ public class MainFrame extends JFrame {
     private String songsterrEmail;
     private String songsterrPassword;
     private boolean loginAttempted = false;
+    
+    // Practice mode state
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    private JButton practiceBtn;
+    private JButton audioSelectBtn;
+    private JLabel scoreLabel;
+    private AudioDeviceInfo selectedAudioDevice = AudioDeviceInfo.systemDefault();
+    private volatile boolean practiceMode = false;
+    private volatile boolean notesLoaded = false;
+    private ScheduledExecutorService positionPoller;
+    private volatile String pendingNotesJson = null;
+    private volatile double pendingDurationMs = 0;
     
     public MainFrame(CefApp cefApp) {
         super("ShredForge");
@@ -88,6 +111,67 @@ public class MainFrame extends JFrame {
         
         // Create CEF client
         cefClient = cefApp.createClient();
+        
+        // Set up message router for JS→Java communication (for note extraction)
+        CefMessageRouter.CefMessageRouterConfig routerConfig = new CefMessageRouter.CefMessageRouterConfig();
+        routerConfig.jsQueryFunction = "cefQuery";
+        routerConfig.jsCancelFunction = "cefQueryCancel";
+        CefMessageRouter messageRouter = CefMessageRouter.create(routerConfig);
+        messageRouter.addHandler(new CefMessageRouterHandlerAdapter() {
+            @Override
+            public boolean onQuery(CefBrowser browser, CefFrame frame, long queryId, 
+                    String request, boolean persistent, CefQueryCallback callback) {
+                // Handle messages from JavaScript
+                if (request.startsWith("notes:")) {
+                    // Format: notes:<json>:<durationMs>
+                    String data = request.substring(6);
+                    int lastColon = data.lastIndexOf(':');
+                    if (lastColon > 0) {
+                        pendingNotesJson = data.substring(0, lastColon);
+                        try {
+                            pendingDurationMs = Double.parseDouble(data.substring(lastColon + 1));
+                        } catch (NumberFormatException e) {
+                            pendingDurationMs = 180000;
+                        }
+                        System.out.println("Received notes from JS, duration: " + pendingDurationMs + "ms");
+                        callback.success("ok");
+                        return true;
+                    }
+                } else if (request.startsWith("trackChanged:")) {
+                    // Track changed - re-extract notes if in practice mode
+                    String trackIndexStr = request.substring(13);
+                    System.out.println("Track changed to: " + trackIndexStr);
+                    if (practiceMode) {
+                        // Re-extract notes for the new track
+                        executor.submit(() -> {
+                            System.out.println("Re-extracting notes for new track...");
+                            extractAndLoadNotes();
+                            int noteCount = pendingNotesJson != null ? 
+                                    (pendingNotesJson.equals("[]") ? 0 : pendingNotesJson.split("\\{").length - 1) : 0;
+                            System.out.println("Reloaded " + noteCount + " notes for track " + trackIndexStr);
+                        });
+                    }
+                    callback.success("ok");
+                    return true;
+                } else if (request.startsWith("playbackPosition:")) {
+                    // Playback position update from AlphaTab
+                    String posStr = request.substring(17);
+                    try {
+                        double positionMs = Double.parseDouble(posStr);
+                        if (practiceMode && repository != null) {
+                            repository.updatePlaybackPosition(positionMs);
+                        }
+                    } catch (NumberFormatException e) {
+                        // Ignore invalid position
+                    }
+                    callback.success("ok");
+                    return true;
+                }
+                callback.failure(0, "Unknown request");
+                return true;
+            }
+        }, true);
+        cefClient.addMessageRouter(messageRouter);
         
         // Add download handler to intercept GP file downloads from Songsterr
         cefClient.addDownloadHandler(new CefDownloadHandler() {
@@ -226,6 +310,24 @@ public class MainFrame extends JFrame {
         
         toolbar.addSeparator();
         
+        // Practice mode controls - use a button instead of combo (JCEF conflicts with popups)
+        audioSelectBtn = new JButton("Audio: System Default");
+        audioSelectBtn.addActionListener(e -> showAudioDeviceSelector());
+        toolbar.add(audioSelectBtn);
+        
+        toolbar.addSeparator();
+        
+        practiceBtn = new JButton("Practice");
+        practiceBtn.addActionListener(e -> togglePracticeMode());
+        toolbar.add(practiceBtn);
+        
+        scoreLabel = new JLabel("Score: --");
+        scoreLabel.setFont(scoreLabel.getFont().deriveFont(Font.BOLD, 14f));
+        scoreLabel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
+        toolbar.add(scoreLabel);
+        
+        toolbar.addSeparator();
+        
         statusLabel = new JLabel("Loading...");
         toolbar.add(statusLabel);
         
@@ -234,6 +336,56 @@ public class MainFrame extends JFrame {
         // Browser panel
         Component browserUI = browser.getUIComponent();
         add(browserUI, BorderLayout.CENTER);
+    }
+    
+    /**
+     * Shows a dialog to select the audio input device.
+     */
+    private void showAudioDeviceSelector() {
+        // Get devices in background to avoid blocking
+        executor.submit(() -> {
+            try {
+                List<AudioDeviceInfo> devices = repository.listAudioDevices();
+                SwingUtilities.invokeLater(() -> {
+                    if (devices.isEmpty()) {
+                        JOptionPane.showMessageDialog(this,
+                                "No audio input devices found.",
+                                "Audio Devices", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                    
+                    // Create a simple selection dialog
+                    AudioDeviceInfo[] deviceArray = devices.toArray(new AudioDeviceInfo[0]);
+                    AudioDeviceInfo selected = (AudioDeviceInfo) JOptionPane.showInputDialog(
+                            this,
+                            "Select audio input device:",
+                            "Audio Device",
+                            JOptionPane.PLAIN_MESSAGE,
+                            null,
+                            deviceArray,
+                            selectedAudioDevice
+                    );
+                    
+                    if (selected != null) {
+                        selectedAudioDevice = selected;
+                        audioSelectBtn.setText("Audio: " + truncateDeviceName(selected.name(), 20));
+                    }
+                });
+            } catch (Exception e) {
+                System.err.println("Failed to enumerate audio devices: " + e.getMessage());
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(this,
+                            "Failed to list audio devices: " + e.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                });
+            }
+        });
+    }
+    
+    private String truncateDeviceName(String name, int maxLen) {
+        if (name == null) return "Unknown";
+        if (name.length() <= maxLen) return name;
+        return name.substring(0, maxLen - 3) + "...";
     }
     
     private void showSearchDialog() {
@@ -790,4 +942,319 @@ public class MainFrame extends JFrame {
         SwingUtilities.invokeLater(() -> 
             statusLabel.setText("Logging in to Songsterr..."));
     }
+    
+    // ==================== Practice Mode Methods ====================
+    
+    /**
+     * Toggles practice mode on/off.
+     */
+    private void togglePracticeMode() {
+        if (practiceMode) {
+            stopPracticeMode();
+        } else {
+            startPracticeMode();
+        }
+    }
+    
+    /**
+     * Starts practice mode - extracts notes from AlphaTab and begins scoring.
+     */
+    private void startPracticeMode() {
+        // First, extract notes from AlphaTab
+        executor.submit(() -> {
+            try {
+                // Get notes from JavaScript
+                extractAndLoadNotes();
+                
+                // Wait a bit for notes to be extracted
+                Thread.sleep(500);
+                
+                if (!notesLoaded) {
+                    SwingUtilities.invokeLater(() -> {
+                        statusLabel.setText("No notes loaded - load a tab first");
+                        JOptionPane.showMessageDialog(this,
+                                "Please load a Guitar Pro file first before starting practice mode.",
+                                "No Tab Loaded", JOptionPane.WARNING_MESSAGE);
+                    });
+                    return;
+                }
+                
+                // Get selected audio device
+                AudioDeviceInfo selectedDevice = selectedAudioDevice;
+                if (selectedDevice == null) {
+                    selectedDevice = AudioDeviceInfo.systemDefault();
+                }
+                
+                // Create practice config
+                PracticeConfig config = repository.defaultPracticeConfig()
+                        .withAudioDevice(selectedDevice);
+                
+                // Set up note result listener for visual feedback
+                repository.setNoteResultListener(new com.shredforge.scoring.LivePracticeScoringService.NoteResultListener() {
+                    @Override
+                    public void onNoteHit(com.shredforge.core.model.ExpectedNote note, int noteIndex) {
+                        // Note hit - show green feedback
+                        SwingUtilities.invokeLater(() -> {
+                            String js = String.format("window.markNoteResult('%s', true);",
+                                    note.noteName().replace("'", "\\'"));
+                            browser.executeJavaScript(js, "", 0);
+                        });
+                    }
+                    
+                    @Override
+                    public void onNoteMissed(com.shredforge.core.model.ExpectedNote note, int noteIndex) {
+                        // Note missed - show red feedback
+                        SwingUtilities.invokeLater(() -> {
+                            String js = String.format("window.markNoteResult('%s', false);",
+                                    note.noteName().replace("'", "\\'"));
+                            browser.executeJavaScript(js, "", 0);
+                        });
+                    }
+                });
+                
+                // Show the feedback panel
+                browser.executeJavaScript("window.showPracticeFeedback && window.showPracticeFeedback();", "", 0);
+                
+                // Start the practice session
+                repository.startPracticeSession(config, this::onScoreUpdate);
+                
+                // Start position polling
+                startPositionPolling();
+                
+                practiceMode = true;
+                
+                SwingUtilities.invokeLater(() -> {
+                    practiceBtn.setText("Stop Practice");
+                    statusLabel.setText("Practice mode active - play along!");
+                    // Tell AlphaTab to start position updates
+                    browser.executeJavaScript("window.startPositionUpdates && window.startPositionUpdates();", "", 0);
+                });
+                
+            } catch (Exception e) {
+                System.err.println("Failed to start practice mode: " + e.getMessage());
+                e.printStackTrace();
+                SwingUtilities.invokeLater(() -> {
+                    statusLabel.setText("Failed to start practice mode");
+                    JOptionPane.showMessageDialog(this,
+                            "Failed to start practice mode: " + e.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                });
+            }
+        });
+    }
+    
+    /**
+     * Stops practice mode and shows final score.
+     */
+    private void stopPracticeMode() {
+        practiceMode = false;
+        
+        // Stop position polling
+        stopPositionPolling();
+        
+        // Tell AlphaTab to stop position updates and clear note highlights
+        browser.executeJavaScript("window.stopPositionUpdates && window.stopPositionUpdates(); window.clearNoteHighlights && window.clearNoteHighlights();", "", 0);
+        
+        // Clear the note result listener
+        repository.setNoteResultListener(null);
+        
+        // Stop the practice session and get final score
+        LiveScoreSnapshot finalScore = repository.stopPracticeSession();
+        
+        SwingUtilities.invokeLater(() -> {
+            practiceBtn.setText("Practice");
+            updateScoreDisplay(finalScore);
+            statusLabel.setText("Practice session ended");
+            
+            // Show summary dialog
+            String message = String.format(
+                    "Practice Session Complete!\n\n" +
+                    "Overall Accuracy: %.1f%%\n" +
+                    "Notes Hit: %d / %d\n" +
+                    "Partial Accuracy (played): %.1f%%\n" +
+                    "Notes Played: %d / %d",
+                    finalScore.overallAccuracyPercent(),
+                    finalScore.hitsOverall(),
+                    finalScore.totalNotesInSong(),
+                    finalScore.partialAccuracyPercent(),
+                    finalScore.notesPlayedSoFar(),
+                    finalScore.totalNotesInSong()
+            );
+            JOptionPane.showMessageDialog(this, message, "Practice Results", JOptionPane.INFORMATION_MESSAGE);
+        });
+    }
+    
+    /**
+     * Extracts notes from AlphaTab and loads them into the scoring service.
+     */
+    private void extractAndLoadNotes() {
+        // Reset pending data
+        pendingNotesJson = null;
+        pendingDurationMs = 0;
+        
+        // Execute JavaScript to extract notes and send them via cefQuery
+        // Note: extractNotesForScoring() with no argument uses the currently selected track
+        String extractScript = """
+            (function() {
+                try {
+                    var notesJson = window.extractNotesForScoring ? window.extractNotesForScoring() : '[]';
+                    var duration = window.getScoreDurationMs ? window.getScoreDurationMs() : 0;
+                    var trackIdx = window.getCurrentTrackIndex ? window.getCurrentTrackIndex() : 0;
+                    console.log('ShredForge: Extracted notes for track ' + trackIdx + ', sending to Java...');
+                    
+                    // Send to Java via cefQuery
+                    if (window.cefQuery) {
+                        window.cefQuery({
+                            request: 'notes:' + notesJson + ':' + duration,
+                            onSuccess: function(response) {
+                                console.log('ShredForge: Notes sent successfully');
+                            },
+                            onFailure: function(errorCode, errorMessage) {
+                                console.error('ShredForge: Failed to send notes:', errorMessage);
+                            }
+                        });
+                    } else {
+                        console.error('ShredForge: cefQuery not available');
+                    }
+                } catch (e) {
+                    console.error('ShredForge: Error extracting notes:', e);
+                }
+            })();
+            """;
+        
+        browser.executeJavaScript(extractScript, "", 0);
+        
+        // Wait for the callback to be processed
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        // Now parse the notes that were received via the message router
+        parseAndLoadNotes();
+    }
+    
+    /**
+     * Parses the notes received from JavaScript and loads them into the scoring service.
+     */
+    private void parseAndLoadNotes() {
+        if (pendingNotesJson == null || pendingNotesJson.isEmpty() || pendingNotesJson.equals("[]")) {
+            System.out.println("No notes received from JavaScript");
+            notesLoaded = false;
+            repository.loadExpectedNotes(new ArrayList<>(), pendingDurationMs > 0 ? pendingDurationMs : 180000);
+            return;
+        }
+        
+        try {
+            // Parse the JSON array of notes
+            List<ExpectedNote> notes = new ArrayList<>();
+            
+            // Use Jackson to parse the JSON
+            var notesArray = JSON_MAPPER.readTree(pendingNotesJson);
+            
+            for (var noteNode : notesArray) {
+                double timeMs = noteNode.has("timeMs") ? noteNode.get("timeMs").asDouble() : 0;
+                double durationMs = noteNode.has("durationMs") ? noteNode.get("durationMs").asDouble() : 100;
+                int midi = noteNode.has("midi") ? noteNode.get("midi").asInt() : 0;
+                int string = noteNode.has("string") ? noteNode.get("string").asInt() : 0;
+                int fret = noteNode.has("fret") ? noteNode.get("fret").asInt() : 0;
+                int measureIndex = noteNode.has("measureIndex") ? noteNode.get("measureIndex").asInt() : 0;
+                int beatIndex = noteNode.has("beatIndex") ? noteNode.get("beatIndex").asInt() : 0;
+                String noteName = noteNode.has("noteName") ? noteNode.get("noteName").asText() : "";
+                
+                notes.add(new ExpectedNote(timeMs, durationMs, midi, string, fret, measureIndex, beatIndex, noteName));
+            }
+            
+            System.out.println("Parsed " + notes.size() + " notes from AlphaTab");
+            notesLoaded = notes.size() > 0;
+            
+            // Load into the scoring service
+            double duration = pendingDurationMs > 0 ? pendingDurationMs : 180000;
+            repository.loadExpectedNotes(notes, duration);
+            
+        } catch (Exception e) {
+            System.err.println("Failed to parse notes JSON: " + e.getMessage());
+            e.printStackTrace();
+            notesLoaded = false;
+            repository.loadExpectedNotes(new ArrayList<>(), 180000);
+        }
+    }
+    
+    /**
+     * Starts polling AlphaTab for playback position updates.
+     */
+    private void startPositionPolling() {
+        if (positionPoller != null) {
+            positionPoller.shutdownNow();
+        }
+        
+        positionPoller = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "position-poller");
+            t.setDaemon(true);
+            return t;
+        });
+        
+        positionPoller.scheduleAtFixedRate(() -> {
+            if (!practiceMode) return;
+            
+            // Get position from JavaScript
+            browser.executeJavaScript(
+                    "if (window.javaPositionCallback) { " +
+                    "  window.javaPositionCallback(window.getPlaybackPositionMs ? window.getPlaybackPositionMs() : 0); " +
+                    "} else { " +
+                    "  var pos = window.getPlaybackPositionMs ? window.getPlaybackPositionMs() : 0; " +
+                    "  console.log('Position: ' + pos); " +
+                    "}",
+                    "", 0);
+            
+            // For now, we'll estimate position based on time elapsed
+            // In production, you'd use proper JS-Java communication
+            
+        }, 0, 50, TimeUnit.MILLISECONDS);
+    }
+    
+    /**
+     * Stops position polling.
+     */
+    private void stopPositionPolling() {
+        if (positionPoller != null) {
+            positionPoller.shutdownNow();
+            positionPoller = null;
+        }
+    }
+    
+    /**
+     * Called when the score is updated during practice.
+     */
+    private void onScoreUpdate(LiveScoreSnapshot snapshot) {
+        SwingUtilities.invokeLater(() -> updateScoreDisplay(snapshot));
+    }
+    
+    /**
+     * Updates the score display label.
+     */
+    private void updateScoreDisplay(LiveScoreSnapshot snapshot) {
+        if (snapshot == null) {
+            scoreLabel.setText("Score: --");
+            return;
+        }
+        
+        String scoreText = String.format("Score: %.0f%% (%.0f%% played)",
+                snapshot.overallAccuracyPercent(),
+                snapshot.partialAccuracyPercent());
+        scoreLabel.setText(scoreText);
+        
+        // Color code based on accuracy
+        double accuracy = snapshot.partialAccuracyPercent();
+        if (accuracy >= 90) {
+            scoreLabel.setForeground(new Color(0, 150, 0)); // Green
+        } else if (accuracy >= 70) {
+            scoreLabel.setForeground(new Color(200, 150, 0)); // Yellow/Orange
+        } else {
+            scoreLabel.setForeground(new Color(200, 0, 0)); // Red
+        }
+    }
+    
+    // ==================== End Practice Mode Methods ====================
 }
