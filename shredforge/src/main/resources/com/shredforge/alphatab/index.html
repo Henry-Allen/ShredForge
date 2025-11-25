@@ -10,8 +10,8 @@
       body {
         margin: 0;
         padding: 0;
-        background: #1e1f22;
-        color: #e6e6e6;
+        background: #222222;
+        color: #ffffff;
       }
       body {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -29,8 +29,8 @@
         align-items: center;
         gap: 8px;
         padding: 8px 10px;
-        background: #1b1c1f;
-        border-bottom: 1px solid #2b2c30;
+        background: #1a1a1a;
+        border-bottom: 1px solid #333333;
       }
       #at-controls button,
       #at-controls input[type='range'] {
@@ -39,12 +39,12 @@
       .at-btn {
         padding: 4px 10px;
         border-radius: 4px;
-        border: 1px solid #3a3b40;
-        background: #2a2b30;
-        color: #e6e6e6;
+        border: 1px solid #444444;
+        background: #2d2d2d;
+        color: #ffffff;
       }
       .at-btn:hover {
-        background: #35363c;
+        background: #3a3a3a;
       }
       .at-btn:disabled {
         opacity: 0.5;
@@ -56,7 +56,7 @@
         width: 100%;
         height: 4px;
         border-radius: 999px;
-        background: #2d2e33;
+        background: #333333;
       }
       #at-playback-progress::-webkit-slider-thumb {
         -webkit-appearance: none;
@@ -64,14 +64,14 @@
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        background: #f8c555;
+        background: #4a90d9;
         margin-top: -3px;
       }
       #at-playback-progress::-moz-range-thumb {
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        background: #f8c555;
+        background: #4a90d9;
       }
       #at-tempo {
         width: 100px;
@@ -79,9 +79,9 @@
       #at-track-select {
         padding: 4px 8px;
         border-radius: 4px;
-        border: 1px solid #3a3b40;
-        background: #2a2b30;
-        color: #e6e6e6;
+        border: 1px solid #444444;
+        background: #2d2d2d;
+        color: #ffffff;
         font-size: 13px;
         max-width: 200px;
       }
@@ -101,25 +101,37 @@
         height: 100%;
         overflow: auto;
       }
-      /* AlphaTab built-in player visuals */
+      /* Songsterr-style player visuals - no bar highlight, just cursor */
       #at svg .at-selection {
-        fill: rgba(255, 240, 160, 0.7);
+        fill: transparent;
+      }
+      /* Hide the bar background highlight completely */
+      #at .at-highlight {
+        display: none !important;
       }
       #at .at-cursor-bar {
-        background: rgba(64, 64, 255, 0.75);
-        width: 3px;
+        display: none !important;
       }
+      /* Thin beat cursor line like Songsterr */
       #at .at-cursor-beat {
-        background: rgba(64, 64, 255, 0.75);
-        width: 3px;
+        background: #4a90d9;
+        width: 2px;
+        opacity: 0.9;
       }
+      /* Notes should be white/bright */
       #at svg .at-highlight {
-        fill: #ffca6f;
-        stroke: #ffca6f;
+        fill: transparent !important;
+        stroke: transparent !important;
       }
-      /* Fallback: force text to white in case attribute-based recolor misses something */
+      /* Force all text to white for dark theme */
       #at svg text {
         fill: #ffffff !important;
+      }
+      /* Make fret numbers pop with slightly larger weight */
+      #at svg text.at-fret-number,
+      #at svg .at-tab-note text {
+        fill: #ffffff !important;
+        font-weight: 500;
       }
       .hidden {
         display: none;
@@ -187,21 +199,49 @@
             enablePlayer: true,
             soundFont: sfUrl,
             scrollElement: document.getElementById('at-container'),
+            enableCursor: true,
+            enableUserInteraction: true,
+            // Songsterr-style: beat cursor only, no bar highlighting
+            enableElementHighlighting: false,
           },
-          // Tabs-only, rhythm below, and force white resources (per alphaTab discussion #1558)
+          // Songsterr-style dark theme colors
           display: {
-            staveProfile: 'Tab',
             resources: {
-              staffLineColor: '#dddddd',
-              barSeparatorColor: '#dddddd',
-              mainGlyphColor: '#dddddd',
-              secondaryGlyphColor: '#dddddd',
-              scoreInfoColor: '#dddddd',
-              barNumberColor: '#dddddd',
+              staffLineColor: '#555555',
+              barSeparatorColor: '#444444',
+              mainGlyphColor: '#ffffff',
+              secondaryGlyphColor: '#aaaaaa',
+              scoreInfoColor: '#888888',
+              barNumberColor: '#666666',
             },
           },
-          tablature: { rhythm: { position: 'Below' } },
+          // Show rhythm
+          notation: {
+            rhythmMode: 'ShowWithBars',
+            extendLineEffectsToBeatEnd: true,
+          },
         });
+
+        // Hide standard notation, show only tab - must be done on scoreLoaded
+        if (api.scoreLoaded && api.scoreLoaded.on) {
+          api.scoreLoaded.on((score) => {
+            if (score && score.tracks) {
+              for (const track of score.tracks) {
+                if (track.staves) {
+                  for (const staff of track.staves) {
+                    staff.showTablature = true;
+                    staff.showStandardNotation = false;
+                  }
+                }
+              }
+            }
+            // Re-render with the modified settings
+            if (api.render) {
+              api.render();
+            }
+          });
+        }
+
         if (api.renderFinished && api.renderFinished.on) {
           api.renderFinished.on(() => {
             const svgEl = el.querySelector('svg');
