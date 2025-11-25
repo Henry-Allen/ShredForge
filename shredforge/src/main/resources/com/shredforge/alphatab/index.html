@@ -13,10 +13,109 @@
         background: #1e1f22;
         color: #e6e6e6;
       }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 13px;
+      }
+      #root {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        width: 100vw;
+      }
+      #at-controls {
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        background: #1b1c1f;
+        border-bottom: 1px solid #2b2c30;
+      }
+      #at-controls button,
+      #at-controls input[type='range'] {
+        cursor: pointer;
+      }
+      .at-btn {
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid #3a3b40;
+        background: #2a2b30;
+        color: #e6e6e6;
+      }
+      .at-btn:hover {
+        background: #35363c;
+      }
+      .at-btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      #at-playback-progress {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 4px;
+        border-radius: 999px;
+        background: #2d2e33;
+      }
+      #at-playback-progress::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #f8c555;
+        margin-top: -3px;
+      }
+      #at-playback-progress::-moz-range-thumb {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #f8c555;
+      }
+      #at-tempo {
+        width: 100px;
+      }
+      #at-track-select {
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: 1px solid #3a3b40;
+        background: #2a2b30;
+        color: #e6e6e6;
+        font-size: 13px;
+        max-width: 200px;
+      }
+      #at-track-select:disabled {
+        opacity: 0.5;
+      }
+      #at-tempo-label {
+        min-width: 40px;
+        text-align: right;
+      }
+      #at-container {
+        flex: 1 1 auto;
+        min-height: 0;
+      }
       #at {
         width: 100%;
         height: 100%;
         overflow: auto;
+      }
+      /* AlphaTab built-in player visuals */
+      #at svg .at-selection {
+        fill: rgba(255, 240, 160, 0.7);
+      }
+      #at .at-cursor-bar {
+        background: rgba(64, 64, 255, 0.75);
+        width: 3px;
+      }
+      #at .at-cursor-beat {
+        background: rgba(64, 64, 255, 0.75);
+        width: 3px;
+      }
+      #at svg .at-highlight {
+        fill: #ffca6f;
+        stroke: #ffca6f;
       }
       /* Fallback: force text to white in case attribute-based recolor misses something */
       #at svg text {
@@ -40,7 +139,7 @@
         // Try local first as required; fall back to CDN if missing
         load('alphatab.js', function (err) {
           if (err || !window.alphaTab) {
-            load('https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.5.0/dist/alphaTab.js', function () {});
+            load('https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.6.0/dist/alphaTab.js', function () {});
           }
         });
       })();
@@ -48,9 +147,29 @@
     <script src="alphatab.wasm"></script>
   </head>
   <body>
-    <div id="at"></div>
+    <div id="root">
+      <div id="at-controls">
+        <button id="at-play-pause" class="at-btn" disabled>Play</button>
+        <button id="at-restart" class="at-btn" disabled>Restart</button>
+        <select id="at-track-select" disabled>
+          <option value="">No track loaded</option>
+        </select>
+        <div style="flex: 1 1 auto"></div>
+        <span id="at-status" style="font-size: 11px; opacity: 0.8"></span>
+        <label for="at-tempo">Tempo</label>
+        <input id="at-tempo" type="range" min="0.5" max="1.5" step="0.05" value="1.0" />
+        <span id="at-tempo-label">1.0x</span>
+      </div>
+      <div id="at-container">
+        <div id="at"></div>
+      </div>
+    </div>
     <script>
       let api = null;
+      let playerDurationMs = 0;
+      let playerPositionMs = 0;
+      let playerReady = false;
+
       function ensureApi() {
         if (api) return api;
         const el = document.getElementById('at');
@@ -58,9 +177,17 @@
           el.innerHTML = '<div style="padding:12px">AlphaTab library not loaded.</div>';
           return null;
         }
+        // Use soundfont URL from Java (injected as window.javaSoundFontUrl), or fall back to CDN
+        const sfUrl = window.javaSoundFontUrl || 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.6.0/dist/soundfont/sonivox.sf2';
+        const sfLen = sfUrl ? sfUrl.length : 0;
+        console.log('Creating AlphaTab API with soundfont length:', sfLen, 'isDataUrl:', sfUrl.startsWith('data:'));
         api = new window.alphaTab.AlphaTabApi(el, {
           engine: 'svg',
-          player: { enablePlayer: false },
+          player: {
+            enablePlayer: true,
+            soundFont: sfUrl,
+            scrollElement: document.getElementById('at-container'),
+          },
           // Tabs-only, rhythm below, and force white resources (per alphaTab discussion #1558)
           display: {
             staveProfile: 'Tab',
@@ -89,7 +216,129 @@
             }
           });
         }
+
+        try {
+          setupPlayerBindings(api);
+        } catch (e) {
+          /* ignore player binding errors */
+        }
+
+        // Listen for player ready event
+        if (api.playerReady && api.playerReady.on) {
+          api.playerReady.on(() => {
+            playerReady = true;
+            const statusLabel = document.getElementById('at-status');
+            if (statusLabel) statusLabel.textContent = 'Player ready';
+            console.log('AlphaTab player ready');
+          });
+        }
+
+        // Listen for soundfont load progress events
+        if (api.soundFontLoad && api.soundFontLoad.on) {
+          api.soundFontLoad.on((e) => {
+            const pct = e && e.total ? Math.floor((e.loaded / e.total) * 100) : 0;
+            console.log('SoundFont loading:', pct + '%', e);
+            const statusLabel = document.getElementById('at-status');
+            if (statusLabel && !playerReady) {
+              statusLabel.textContent = 'Loading soundfont: ' + pct + '%';
+            }
+          });
+        }
+
+        // Listen for errors
+        if (api.error && api.error.on) {
+          api.error.on((e) => {
+            console.error('AlphaTab error:', e);
+            const statusLabel = document.getElementById('at-status');
+            if (statusLabel) {
+              statusLabel.textContent = 'Error: ' + (e && e.message ? e.message : e);
+            }
+          });
+        }
+
+        // Listen for score loaded event
+        if (api.scoreLoaded && api.scoreLoaded.on) {
+          api.scoreLoaded.on((score) => {
+            console.log('Score loaded:', score ? score.title : 'unknown');
+            populateTrackSelector(score);
+          });
+        }
+
+        // Listen for MIDI load events (important for playback)
+        if (api.midiLoad && api.midiLoad.on) {
+          api.midiLoad.on((e) => {
+            console.log('MIDI loading:', e);
+          });
+        }
+
+        if (api.midiLoaded && api.midiLoaded.on) {
+          api.midiLoaded.on(() => {
+            console.log('MIDI loaded - playback should work now');
+          });
+        }
+
         return api;
+      }
+
+      /**
+       * Populates the track selector dropdown with tracks from the loaded score.
+       */
+      function populateTrackSelector(score) {
+        const select = document.getElementById('at-track-select');
+        if (!select) return;
+
+        // Clear existing options
+        select.innerHTML = '';
+
+        if (!score || !score.tracks || score.tracks.length === 0) {
+          select.innerHTML = '<option value="">No tracks available</option>';
+          select.disabled = true;
+          return;
+        }
+
+        // Add an option for each track
+        score.tracks.forEach((track, index) => {
+          const option = document.createElement('option');
+          option.value = index;
+          // Build track name: use track name, or instrument name, or fallback
+          let trackName = track.name || '';
+          if (!trackName && track.playbackInfo) {
+            // Try to get instrument name from MIDI program
+            trackName = 'Track ' + (index + 1);
+          }
+          if (!trackName) {
+            trackName = 'Track ' + (index + 1);
+          }
+          // Add instrument info if available
+          if (track.playbackInfo && track.playbackInfo.primaryChannel) {
+            const isPercussion = track.playbackInfo.primaryChannel.isPercussion;
+            if (isPercussion) {
+              trackName += ' (Drums)';
+            }
+          }
+          option.textContent = trackName;
+          select.appendChild(option);
+        });
+
+        select.disabled = false;
+
+        // Set up change handler if not already done
+        if (!select.dataset.handlerAttached) {
+          select.addEventListener('change', () => {
+            const trackIndex = parseInt(select.value, 10);
+            if (!isNaN(trackIndex) && api && api.tracks) {
+              const score = api.score;
+              if (score && score.tracks && score.tracks[trackIndex]) {
+                // Use renderTracks to show only the selected track
+                api.renderTracks([score.tracks[trackIndex]]);
+                console.log('Switched to track:', trackIndex, score.tracks[trackIndex].name);
+              }
+            }
+          });
+          select.dataset.handlerAttached = 'true';
+        }
+
+        console.log('Track selector populated with', score.tracks.length, 'tracks');
       }
 
       function normalizeAlphaScore(data) {
@@ -206,7 +455,10 @@
             parts.push(beatTokens.join(' '));
           }
           const title = data.title || (data.song && data.song.title) || (t && t.name) || 'Guitar';
-          const header = `\\track "${title}" \\staff{tabs} `;
+          const tempo = data.tempo || 120;
+          // AlphaTex header: title, tempo, time signature, and staff type
+          const ts = data.timeSignature || [4, 4];
+          const header = `\\title "${title}" \\tempo ${tempo} \\ts ${ts[0]} ${ts[1]} \\track "Guitar" \\staff{tabs} \\tuning E4 B3 G3 D3 A2 E2 `;
           return header + parts.join(' | ');
         } catch (e) {
           return null;
@@ -385,6 +637,114 @@
 
       // old chat gpt method (probably dont need)(keep just in case)(for now)
 
+      function setupPlayerBindings(apiInstance) {
+        if (!apiInstance) return;
+
+        const playPauseBtn = document.getElementById('at-play-pause');
+        const restartBtn = document.getElementById('at-restart');
+        const tempoSlider = document.getElementById('at-tempo');
+        const tempoLabel = document.getElementById('at-tempo-label');
+        const statusLabel = document.getElementById('at-status');
+        if (!playPauseBtn || !restartBtn || !tempoSlider || !tempoLabel) {
+          return;
+        }
+
+        let isScrubbing = false;
+
+        const PlayerState = window.alphaTab && window.alphaTab.synth && window.alphaTab.synth.PlayerState ? window.alphaTab.synth.PlayerState : null;
+
+        function updateTempoLabel(value) {
+          const v = typeof value === 'number' ? value : parseFloat(tempoSlider.value || '1');
+          tempoLabel.textContent = v.toFixed(1) + 'x';
+        }
+
+        function updateProgressState() {
+          if (!playerDurationMs || isScrubbing) return;
+        }
+
+        // Initial state
+        playPauseBtn.disabled = false;
+        restartBtn.disabled = false;
+        updateTempoLabel(parseFloat(tempoSlider.value || '1'));
+        if (statusLabel) statusLabel.textContent = '';
+
+        playPauseBtn.addEventListener('click', () => {
+          try {
+            // Check Web Audio API support
+            const hasWebAudio = !!(window.AudioContext || window.webkitAudioContext);
+            const state = apiInstance.playerState;
+            const score = apiInstance.score;
+            console.log('Play clicked - hasWebAudio:', hasWebAudio, 'playerState:', state, 'hasScore:', !!score);
+
+            if (!hasWebAudio) {
+              if (statusLabel) statusLabel.textContent = 'Error: Web Audio not supported in this WebView';
+              return;
+            }
+
+            if (statusLabel) statusLabel.textContent = 'Playing...';
+
+            // Try to play
+            if (apiInstance.playPause) {
+              apiInstance.playPause();
+            } else if (apiInstance.play) {
+              apiInstance.play();
+            }
+          } catch (e) {
+            console.error('Play/pause error:', e);
+            if (statusLabel) statusLabel.textContent = 'Error: ' + (e.message || e);
+          }
+        });
+
+        restartBtn.addEventListener('click', () => {
+          try {
+            if (apiInstance.stop) apiInstance.stop();
+            if (apiInstance.seek) apiInstance.seek(0);
+            playerPositionMs = 0;
+          } catch (e) {
+            console.error('Restart error:', e);
+          }
+        });
+
+        tempoSlider.addEventListener('input', () => {
+          const v = parseFloat(tempoSlider.value || '1');
+          updateTempoLabel(v);
+          try {
+            apiInstance.playbackSpeed = v;
+          } catch (e) {
+            /* ignore */
+          }
+        });
+
+        if (apiInstance.playerStateChanged && apiInstance.playerStateChanged.on) {
+          apiInstance.playerStateChanged.on((e) => {
+            let playing = false;
+            if (PlayerState && e && typeof e.state !== 'undefined') {
+              playing = e.state === PlayerState.Playing;
+            } else {
+              const state = e && e.state ? String(e.state).toLowerCase() : '';
+              playing = state === 'playing';
+            }
+            playPauseBtn.textContent = playing ? 'Pause' : 'Play';
+            if (statusLabel) {
+              statusLabel.textContent = playing ? 'Player state: Playing' : 'Player state: Stopped';
+            }
+          });
+        }
+
+        if (apiInstance.playerPositionChanged && apiInstance.playerPositionChanged.on) {
+          apiInstance.playerPositionChanged.on((e) => {
+            if (!e) return;
+            if (typeof e.endTime === 'number') {
+              playerDurationMs = e.endTime;
+            }
+            if (typeof e.currentTime === 'number') {
+              playerPositionMs = e.currentTime;
+              updateProgressState();
+            }
+          });
+        }
+      }
+
       function renderScore(alphaTabScoreJson) {
         const el = document.getElementById('at');
         const api = ensureApi();
@@ -414,29 +774,42 @@
             scoreObj = null;
           }
 
+          // Reset player ready state when loading new score
+          playerReady = false;
+          const statusLabel = document.getElementById('at-status');
+          if (statusLabel) statusLabel.textContent = 'Loading score...';
+
           let usedTex = false;
           if (!scoreObj) {
-            // Try AlphaTex fallback first for robust rendering
+            // Try AlphaTex fallback first for robust rendering and playback
             const tex = toAlphaTex(data);
+            console.log('Generated AlphaTex:', tex ? tex.substring(0, 200) + '...' : 'null');
             if (tex && typeof api.tex === 'function') {
+              console.log('Using api.tex() for rendering');
               api.tex(tex);
               usedTex = true;
             } else {
+              console.log('AlphaTex not available, normalizing score data');
               data = normalizeAlphaScore(data);
             }
+          } else {
+            console.log('Using deserialized score object');
           }
 
           if (!usedTex) {
             const payload = scoreObj || data;
-            if (api.renderScore) {
+            // Use api.load() which properly initializes both rendering AND player/synthesizer
+            console.log('Loading score via api.load/renderScore/loadScore');
+            if (api.load) {
+              api.load(payload);
+            } else if (api.renderScore) {
               api.renderScore(payload);
             } else if (api.loadScore) {
               api.loadScore(payload);
-            } else if (api.load) {
-              api.load(payload);
             }
           }
-          if (api.render) api.render();
+          // Don't call render() separately - load/tex already triggers rendering
+          console.log('Score loading initiated, waiting for playerReady event...');
           setTimeout(() => {
             const svgEl = el.querySelector('svg');
             normalizeArcOrientation(svgEl);
@@ -462,6 +835,61 @@
 
       window.renderScore = renderScore;
       window.exportSvg = exportSvg;
+      window.alphaTabPlayer = {
+        play() {
+          const instance = ensureApi();
+          if (instance && instance.play) instance.play();
+        },
+        pause() {
+          const instance = ensureApi();
+          if (instance && instance.pause) instance.pause();
+        },
+        stop() {
+          const instance = ensureApi();
+          if (instance && instance.stop) instance.stop();
+        },
+        restart() {
+          const instance = ensureApi();
+          if (!instance) return;
+          try {
+            if (instance.stop) instance.stop();
+            if (instance.seek) instance.seek(0);
+          } catch (e) {
+            /* ignore */
+          }
+        },
+        setTempo(multiplier) {
+          const instance = ensureApi();
+          if (!instance) return;
+          try {
+            instance.playbackSpeed = multiplier;
+          } catch (e) {
+            /* ignore */
+          }
+        },
+        getPositionMs() {
+          return playerPositionMs || 0;
+        },
+        getDurationMs() {
+          return playerDurationMs || 0;
+        },
+      };
+
+      window.loadGpFromJava = function (base64) {
+        try {
+          const api = ensureApi();
+          if (!api || !api.load || !base64) return;
+          const binary = window.atob(base64);
+          const len = binary.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
+          api.load(bytes.buffer);
+        } catch (e) {
+          /* ignore load errors; Java side shows status */
+        }
+      };
     </script>
   </body>
 </html>

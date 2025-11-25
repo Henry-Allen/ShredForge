@@ -1,16 +1,14 @@
 module com.shredforge {
-    requires javafx.controls;
-    requires javafx.fxml;
-    requires javafx.web;
-    requires jdk.jsobject;
     requires java.net.http;
     requires java.desktop;
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.datatype.jsr310;
     requires TarsosDSP.core;
     requires TarsosDSP.jvm;
+    requires jcefmaven;
+    requires jcef;
+    requires com.formdev.flatlaf;
 
-    opens com.shredforge to javafx.fxml;
     opens com.shredforge.tabs.dao to com.fasterxml.jackson.databind;
     exports com.shredforge;
     exports com.shredforge.core;
@@ -23,4 +21,5 @@ module com.shredforge {
     exports com.shredforge.scoring;
     exports com.shredforge.scoring.model;
     exports com.shredforge.scoring.detection;
+    exports com.shredforge.ui;
 }

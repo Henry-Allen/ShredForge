@@ -15,15 +15,15 @@ import com.shredforge.core.ports.CalibrationService;
 import com.shredforge.core.ports.SessionScoringService;
 import com.shredforge.tabs.TabManager;
 import com.shredforge.tabview.TabRenderingService;
-import com.shredforge.tabs.model.SavedTabSummary;
+import com.shredforge.tabs.model.SongSelection;
 import com.shredforge.tabs.model.TabSearchRequest;
-import com.shredforge.tabs.model.TabSearchResult;
-import com.shredforge.tabs.model.TabSelection;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -48,12 +48,12 @@ public final class ShredforgeRepository {
         return facade.describeState();
     }
 
-    public List<TabSearchResult> searchTabs(String term) {
-        return tabManager.searchTabs(new TabSearchRequest(term));
-    }
-
-    public List<SavedTabSummary> listSavedTabs() {
-        return tabManager.listSavedTabs();
+    /**
+     * Searches for songs matching the given term.
+     * Returns song-level results (each containing all tracks).
+     */
+    public List<SongSelection> searchSongs(String term) {
+        return tabManager.searchSongs(new TabSearchRequest(term));
     }
 
     public FormattedTab formatTab(TabData tabData) {
@@ -73,20 +73,19 @@ public final class ShredforgeRepository {
         return TuningLibrary.commonTunings();
     }
 
-    public TabData downloadSelection(TabSelection selection, boolean save) {
-        return save ? tabManager.downloadAndSave(selection) : tabManager.downloadSelection(selection);
-    }
-
-    public TabData loadSavedTab(String tabId) {
-        return tabManager.loadSavedTab(tabId)
-                .orElseThrow(() -> new IllegalArgumentException("No saved tab with id " + tabId));
+    /**
+     * Downloads a GP file for the given song selection.
+     * Returns a CompletableFuture that resolves to TabData with the GP file path.
+     */
+    public CompletableFuture<TabData> downloadGpFile(SongSelection selection) {
+        return tabManager.downloadOrGetCached(selection);
     }
 
     /**
      * Runs a canned happy-path flow that exercises every subsystem. Used by the temporary testing UI.
      */
     public DemoSessionSummary runDemoSession() {
-        TabData tabData = attemptAutoDownload().orElseGet(this::fallbackTabData);
+        TabData tabData = fallbackTabData();
         SongRequest songRequest = tabData.song();
         FormattedTab formatted = facade.formatTab(tabData);
         CalibrationInput calibrationInput =
@@ -94,23 +93,6 @@ public final class ShredforgeRepository {
         CalibrationProfile profile = facade.calibrate(calibrationInput);
         SessionResult sessionResult = facade.runSession("demo-user", tabData, profile);
         return new DemoSessionSummary(songRequest.displayName(), formatted, sessionResult);
-    }
-
-    private Optional<TabData> attemptAutoDownload() {
-        try {
-            List<TabSearchResult> results = searchTabs("Back in Black");
-            if (results.isEmpty()) {
-                return Optional.empty();
-            }
-            TabSelection selection = results.stream()
-                    .filter(result -> result.selection().instrument().toLowerCase().contains("guitar"))
-                    .findFirst()
-                    .orElse(results.get(0))
-                    .selection();
-            return Optional.of(tabManager.downloadSelection(selection));
-        } catch (Exception ex) {
-            return Optional.empty();
-        }
     }
 
     private TabData fallbackTabData() {

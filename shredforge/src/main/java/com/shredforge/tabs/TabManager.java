@@ -4,81 +4,121 @@ import com.shredforge.core.model.SongRequest;
 import com.shredforge.core.model.TabData;
 import com.shredforge.core.ports.TabGateway;
 import com.shredforge.tabs.dao.TabDataDao;
-import com.shredforge.tabs.model.SavedTabSummary;
+import com.shredforge.tabs.model.SongSelection;
 import com.shredforge.tabs.model.TabSearchRequest;
-import com.shredforge.tabs.model.TabSearchResult;
-import com.shredforge.tabs.model.TabSelection;
 import com.shredforge.tabs.service.TabGetService;
-import com.shredforge.tabs.service.TabSaveService;
-import java.util.HashSet;
+
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 /**
- * High-level manager that coordinates tab search, download, and persistence requests.
+ * High-level manager that coordinates song search and GP file downloads.
+ * 
+ * <p>Songs are searched at the song level (not individual tracks), and downloads
+ * return GP files that contain all tracks for the song. Downloads use direct HTTP
+ * to Songsterr's API rather than browser automation.
  */
 public final class TabManager implements TabGateway {
 
+    private final TabDataDao dao;
     private final TabGetService getService;
-    private final TabSaveService saveService;
 
-    public TabManager(TabGetService getService, TabSaveService saveService) {
+    public TabManager(TabDataDao dao, TabGetService getService) {
+        this.dao = dao;
         this.getService = getService;
-        this.saveService = saveService;
     }
 
     public static TabManager createDefault() {
         TabDataDao dao = new TabDataDao();
-        return new TabManager(new TabGetService(dao), new TabSaveService(dao));
+        return new TabManager(dao, new TabGetService(dao));
     }
 
-    public List<TabSearchResult> searchTabs(TabSearchRequest request) {
-        Set<String> savedIds = new HashSet<>(saveService.savedTabIds());
-        return getService.search(request).stream()
-                .map(selection -> new TabSearchResult(selection, savedIds.contains(selection.tabId())))
-                .toList();
+    /**
+     * Searches for songs matching the given request.
+     * Returns song-level results (each containing all tracks).
+     */
+    public List<SongSelection> searchSongs(TabSearchRequest request) {
+        return getService.searchSongs(request);
     }
 
-    public List<SavedTabSummary> listSavedTabs() {
-        List<SavedTabSummary> summaries = saveService.listSavedTabs();
-        summaries.forEach(summary -> getService.registerSelection(summary.selection()));
-        return summaries;
+    /**
+     * Downloads a Guitar Pro file for the given song.
+     * The GP file contains all tracks for the song.
+     * 
+     * @param selection the song to download
+     * @return a CompletableFuture that resolves to TabData with the GP file path
+     */
+    public CompletableFuture<TabData> downloadGpFile(SongSelection selection) {
+        return getService.downloadGpFile(selection);
     }
 
-    public TabData downloadSelection(TabSelection selection) {
-        return getService.download(selection);
+    /**
+     * Checks if a GP file already exists for the given song.
+     * If it exists, returns TabData pointing to the cached file.
+     */
+    public Optional<TabData> findCachedGpFile(SongSelection selection) {
+        return getService.findExistingGpFile(selection)
+                .map(path -> TabData.fromGpFile(
+                        TabGetService.buildSourceId(selection),
+                        selection.toSongRequest(),
+                        path,
+                        Instant.now()
+                ));
     }
 
-    public TabData downloadAndSave(TabSelection selection) {
-        TabData downloaded = downloadSelection(selection);
-        SavedTabSummary summary = saveService.save(selection, downloaded);
-        return new TabData(
-                downloaded.sourceId(), downloaded.song(), downloaded.rawContent(), downloaded.fetchedAt(), summary.location());
+    /**
+     * Downloads a GP file, or returns the cached version if it exists.
+     */
+    public CompletableFuture<TabData> downloadOrGetCached(SongSelection selection) {
+        return findCachedGpFile(selection)
+                .map(CompletableFuture::completedFuture)
+                .orElseGet(() -> downloadGpFile(selection));
     }
 
-    public Optional<TabData> loadSavedTab(String tabId) {
-        return saveService.loadTab(tabId);
+    public Optional<SongSelection> findSelection(String songKey) {
+        return getService.findSelection(songKey);
     }
 
-    public Optional<TabSelection> findSelection(String tabId) {
-        return getService.findSelection(tabId).or(() -> saveService.findSelection(tabId));
+    /**
+     * Returns the GP storage directory.
+     */
+    public Path getGpStorageDir() {
+        return dao.getGpStorageDir();
     }
+
+    // --- TabGateway implementation (simplified for GP-only workflow) ---
 
     @Override
     public TabData fetchTab(SongRequest request) {
-        return saveService.findTabBySong(request)
-                .or(() -> getService.downloadBySongRequest(request))
+        // Search for matching song
+        List<SongSelection> results = searchSongs(new TabSearchRequest(
+                request.title() != null ? request.title() : request.artist()));
+        
+        SongSelection match = results.stream()
+                .filter(s -> matches(s, request))
+                .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Unable to locate a tab for " + request.displayName() + ". Try searching first."));
+                        "Unable to locate a song for " + request.displayName() + ". Try searching first."));
+        
+        // Check for cached GP file first
+        return findCachedGpFile(match)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No cached GP file for " + request.displayName() + ". Download it first."));
     }
 
     @Override
     public void persistTab(TabData tabData) {
-        String tabId = TabGetService.extractTabId(tabData.sourceId());
-        TabSelection selection = findSelection(tabId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "No matching tab selection found for source " + tabData.sourceId()));
-        saveService.save(selection, tabData);
+        // GP files are automatically persisted during download - nothing to do here
+    }
+
+    private static boolean matches(SongSelection selection, SongRequest request) {
+        boolean titleMatch = request.title() == null
+                || selection.title().equalsIgnoreCase(request.title().trim());
+        boolean artistMatch = request.artist() == null
+                || selection.artist().equalsIgnoreCase(request.artist().trim());
+        return titleMatch && artistMatch;
     }
 }
