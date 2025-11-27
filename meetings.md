@@ -8,3 +8,6 @@ Alec will be working on the UI.Discussed song plan for demo.
 Halfway point of code achived
 Kevin agreed to work on the slides
 Alec will be the demo man
+11/25/2025
+Henry will continue to finish the code of the project
+Kevin and Alec will make sure the slides and other things are ready for the demo
