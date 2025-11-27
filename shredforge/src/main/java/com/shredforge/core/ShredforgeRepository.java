@@ -1,60 +1,45 @@
 package com.shredforge.core;
 
 import com.shredforge.core.model.AudioDeviceInfo;
-import com.shredforge.core.model.CalibrationInput;
-import com.shredforge.calibration.SimpleCalibrationService;
-import com.shredforge.calibration.SimpleSignalProcessor;
+import com.shredforge.calibration.GuitarTunerService;
 import com.shredforge.calibration.TuningLibrary;
 import com.shredforge.calibration.TuningPreset;
-import com.shredforge.core.model.CalibrationProfile;
+import com.shredforge.calibration.TuningSession;
 import com.shredforge.core.model.ExpectedNote;
-import com.shredforge.core.model.FormattedTab;
 import com.shredforge.core.model.LiveScoreSnapshot;
 import com.shredforge.core.model.PracticeConfig;
-import com.shredforge.core.model.SessionRequest;
-import com.shredforge.core.model.SessionResult;
-import com.shredforge.core.model.SongRequest;
 import com.shredforge.core.model.TabData;
 import com.shredforge.core.ports.PracticeScoringService;
-import com.shredforge.core.ports.SessionScoringService;
 import com.shredforge.scoring.LivePracticeScoringService;
 import com.shredforge.tabs.TabManager;
-import com.shredforge.tabview.TabRenderingService;
 import com.shredforge.tabs.model.SongSelection;
 import com.shredforge.tabs.model.TabSearchRequest;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 /**
- * Primary entry point for UI/controllers. Wraps {@link ShredforgeFacade} and exposes high-level operations the UI can
+ * Primary entry point for UI/controllers. Exposes high-level operations the UI can
  * call without needing to understand the underlying subsystems.
  */
 public final class ShredforgeRepository {
 
-    private final ShredforgeFacade facade;
     private final TabManager tabManager;
     private final PracticeScoringService practiceScoringService;
+    private final GuitarTunerService tunerService;
 
     private ShredforgeRepository(Builder builder) {
         this.tabManager = builder.tabManager != null ? builder.tabManager : TabManager.createDefault();
-        this.facade = builder.facade != null ? builder.facade : defaultFacade(tabManager);
         this.practiceScoringService = builder.practiceScoringService != null 
                 ? builder.practiceScoringService 
                 : new LivePracticeScoringService();
+        this.tunerService = new GuitarTunerService();
     }
 
     public static Builder builder() {
         return new Builder();
-    }
-
-    public ShredforgeFacade.RepositoryState describeState() {
-        return facade.describeState();
     }
 
     /**
@@ -65,17 +50,8 @@ public final class ShredforgeRepository {
         return tabManager.searchSongs(new TabSearchRequest(term));
     }
 
-    public FormattedTab formatTab(TabData tabData) {
-        Objects.requireNonNull(tabData, "tabData");
-        return facade.formatTab(tabData);
-    }
-
     public TabManager tabManager() {
         return tabManager;
-    }
-
-    public CalibrationProfile calibrate(CalibrationInput input) {
-        return facade.calibrate(input);
     }
 
     public List<TuningPreset> availableTunings() {
@@ -191,55 +167,97 @@ public final class ShredforgeRepository {
 
     // ==================== End Practice Session API ====================
 
+    // ==================== Tuning Session API ====================
+
     /**
-     * Runs a canned happy-path flow that exercises every subsystem. Used by the temporary testing UI.
+     * Creates a tuning session from MIDI note numbers (as extracted from AlphaTab).
+     * @param tuningName display name for the tuning (e.g., "Standard", "Drop D")
+     * @param midiNotes array of MIDI note numbers, one per string (high to low)
+     * @return a new TuningSession
      */
-    public DemoSessionSummary runDemoSession() {
-        TabData tabData = fallbackTabData();
-        SongRequest songRequest = tabData.song();
-        FormattedTab formatted = facade.formatTab(tabData);
-        CalibrationInput calibrationInput =
-                new CalibrationInput("demo-user", 32.0, Map.of("E2", 82.41, "E4", 329.63));
-        CalibrationProfile profile = facade.calibrate(calibrationInput);
-        SessionResult sessionResult = facade.runSession("demo-user", tabData, profile);
-        return new DemoSessionSummary(songRequest.displayName(), formatted, sessionResult);
+    public TuningSession createTuningSession(String tuningName, int[] midiNotes) {
+        return TuningSession.fromMidiNotes(tuningName, midiNotes);
     }
 
-    private TabData fallbackTabData() {
-        SongRequest songRequest = new SongRequest("Demo Groove", "Shredforge AI", "Standard", "Intermediate");
-        return new TabData(
-                "demo-source",
-                songRequest,
-                """
-                        E|----------------|
-                        B|----------------|
-                        G|----------------|
-                        D|-----5--7--5----|
-                        A|--5-----------7-|
-                        E|----------------|
-                        """,
-                Instant.now(),
-                null);
+    /**
+     * Creates a tuning session from a preset.
+     * @param preset the tuning preset to use
+     * @return a new TuningSession
+     */
+    public TuningSession createTuningSession(TuningPreset preset) {
+        return TuningSession.fromPreset(preset);
     }
 
-    private static ShredforgeFacade defaultFacade(TabManager tabManager) {
-        return ShredforgeFacade.builder()
-                .withTabGateway(tabManager)
-                .withTabFormatter(new TabRenderingService())
-                .withCalibrationService(new SimpleCalibrationService(new SimpleSignalProcessor()))
-                .withSessionScoringService(new MockSessionScoringService())
-                .build();
+    /**
+     * Creates a standard tuning session (EADGBE).
+     * @return a new TuningSession for standard tuning
+     */
+    public TuningSession createStandardTuningSession() {
+        return TuningSession.standardTuning();
     }
+
+    /**
+     * Starts a tuning session with real-time pitch detection.
+     * @param session the tuning session to start
+     * @param audioDevice the audio device to use for input
+     * @param updateListener callback for real-time tuning updates
+     */
+    public void startTuning(TuningSession session, AudioDeviceInfo audioDevice, 
+            java.util.function.Consumer<GuitarTunerService.TuningUpdate> updateListener) {
+        tunerService.setAudioDevice(audioDevice);
+        tunerService.startTuning(session, updateListener);
+    }
+
+    /**
+     * Stops the current tuning session.
+     */
+    public void stopTuning() {
+        tunerService.stopTuning();
+    }
+
+    /**
+     * Returns true if a tuning session is currently active.
+     */
+    public boolean isTuningActive() {
+        return tunerService.isRunning();
+    }
+
+    /**
+     * Advances to the next string in the tuning session.
+     * @return true if there are more strings to tune
+     */
+    public boolean tuningNextString() {
+        return tunerService.nextString();
+    }
+
+    /**
+     * Goes back to the previous string in the tuning session.
+     * @return true if moved successfully
+     */
+    public boolean tuningPreviousString() {
+        return tunerService.previousString();
+    }
+
+    /**
+     * Confirms the current string is tuned and advances to the next.
+     * @return true if there are more strings to tune
+     */
+    public boolean tuningConfirmAndAdvance() {
+        return tunerService.confirmAndAdvance();
+    }
+
+    /**
+     * Returns the current tuning session, or null if not tuning.
+     */
+    public TuningSession getCurrentTuningSession() {
+        return tunerService.getSession();
+    }
+
+    // ==================== End Tuning Session API ====================
 
     public static final class Builder {
-        private ShredforgeFacade facade;
         private TabManager tabManager;
         private PracticeScoringService practiceScoringService;
-
-        public Builder withFacade(ShredforgeFacade facade) {
-            this.facade = Objects.requireNonNull(facade, "facade");
-            return this;
-        }
 
         public Builder withTabManager(TabManager tabManager) {
             this.tabManager = Objects.requireNonNull(tabManager, "tabManager");
@@ -253,41 +271,6 @@ public final class ShredforgeRepository {
 
         public ShredforgeRepository build() {
             return new ShredforgeRepository(this);
-        }
-    }
-
-    public record DemoSessionSummary(String songName, FormattedTab tab, SessionResult result) {
-
-        public String toDisplayString() {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Song: ").append(songName).append(System.lineSeparator());
-            sb.append("Accuracy: ").append(String.format("%.1f%%", result.accuracyPercent()))
-                    .append(System.lineSeparator());
-            if (!result.insights().isEmpty()) {
-                sb.append("Insights:").append(System.lineSeparator());
-                result.insights().forEach(insight -> sb.append(" - ").append(insight).append(System.lineSeparator()));
-            }
-            if (tab != null && !tab.svgFragments().isEmpty()) {
-                sb.append("SVG Preview:").append(System.lineSeparator());
-                tab.svgFragments().forEach(line -> sb.append("   ").append(line).append(System.lineSeparator()));
-            }
-            return sb.toString();
-        }
-    }
-
-    private static final class MockSessionScoringService implements SessionScoringService {
-
-        @Override
-        public SessionResult score(SessionRequest request) {
-            double base = 70 + ThreadLocalRandom.current().nextDouble(25);
-            List<String> insights =
-                    List.of("Timing was solid!", "Watch bend accuracy on the D string.", "Try increasing tempo by +5 BPM.");
-            return new SessionResult(
-                    "session-" + request.startedAt().toEpochMilli(),
-                    base,
-                    insights,
-                    Map.of("E", base - 5, "A", base + 2, "D", base + 4),
-                    Instant.now());
         }
     }
 }

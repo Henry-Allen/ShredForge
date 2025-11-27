@@ -3,6 +3,9 @@ package com.shredforge.ui;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shredforge.SwingApp;
 import com.shredforge.core.ShredforgeRepository;
+import com.shredforge.calibration.GuitarTunerService;
+import com.shredforge.calibration.TuningSession;
+import com.shredforge.calibration.TuningString;
 import com.shredforge.core.model.AudioDeviceInfo;
 import com.shredforge.core.model.ExpectedNote;
 import com.shredforge.core.model.LiveScoreSnapshot;
@@ -73,6 +76,18 @@ public class MainFrame extends JFrame {
     private ScheduledExecutorService positionPoller;
     private volatile String pendingNotesJson = null;
     private volatile double pendingDurationMs = 0;
+    
+    // Tuning mode state
+    private JButton tuneBtn;
+    private volatile boolean tuningMode = false;
+    private TuningSession currentTuningSession = null;
+    private JPanel tuningPanel = null;
+    private JLabel tuningStringLabel = null;
+    private JLabel tuningNoteLabel = null;
+    private JLabel tuningCentsLabel = null;
+    private JLabel tuningStatusLabel = null;
+    private JProgressBar tuningMeter = null;
+    private volatile String pendingTuningJson = null;
     
     public MainFrame(CefApp cefApp) {
         super("ShredForge");
@@ -151,6 +166,13 @@ public class MainFrame extends JFrame {
                             System.out.println("Reloaded " + noteCount + " notes for track " + trackIndexStr);
                         });
                     }
+                    callback.success("ok");
+                    return true;
+                } else if (request.startsWith("tuning:")) {
+                    // Tuning info received from JavaScript
+                    String tuningData = request.substring(7);
+                    pendingTuningJson = tuningData;
+                    System.out.println("Received tuning from JS: " + tuningData);
                     callback.success("ok");
                     return true;
                 } else if (request.startsWith("playbackPosition:")) {
@@ -307,6 +329,13 @@ public class MainFrame extends JFrame {
         backToAlphaTabBtn.setVisible(false);
         backToAlphaTabBtn.addActionListener(e -> navigateToAlphaTab());
         toolbar.add(backToAlphaTabBtn);
+        
+        toolbar.addSeparator();
+        
+        // Tune button
+        tuneBtn = new JButton("Tune");
+        tuneBtn.addActionListener(e -> toggleTuningMode());
+        toolbar.add(tuneBtn);
         
         toolbar.addSeparator();
         
@@ -1257,4 +1286,344 @@ public class MainFrame extends JFrame {
     }
     
     // ==================== End Practice Mode Methods ====================
+    
+    // ==================== Tuning Mode Methods ====================
+    
+    /**
+     * Toggles tuning mode on/off.
+     */
+    private void toggleTuningMode() {
+        if (tuningMode) {
+            stopTuningMode();
+        } else {
+            startTuningMode();
+        }
+    }
+    
+    /**
+     * Starts tuning mode - extracts tuning from current track and shows tuning UI.
+     */
+    private void startTuningMode() {
+        // Don't allow tuning while practicing
+        if (practiceMode) {
+            JOptionPane.showMessageDialog(this,
+                    "Please stop practice mode before tuning.",
+                    "Practice Mode Active", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        executor.submit(() -> {
+            try {
+                // Extract tuning from current track via JavaScript
+                pendingTuningJson = null;
+                browser.executeJavaScript("window.sendTuningToJava && window.sendTuningToJava();", "", 0);
+                
+                // Wait for response
+                Thread.sleep(500);
+                
+                // Parse the tuning data
+                int[] midiNotes;
+                String tuningName;
+                
+                if (pendingTuningJson != null && !pendingTuningJson.isEmpty()) {
+                    try {
+                        var tuningNode = JSON_MAPPER.readTree(pendingTuningJson);
+                        tuningName = tuningNode.has("tuningName") ? tuningNode.get("tuningName").asText() : "Standard";
+                        var midiArray = tuningNode.get("midiNotes");
+                        if (midiArray != null && midiArray.isArray()) {
+                            midiNotes = new int[midiArray.size()];
+                            for (int i = 0; i < midiArray.size(); i++) {
+                                midiNotes[i] = midiArray.get(i).asInt();
+                            }
+                        } else {
+                            // Default to standard tuning
+                            midiNotes = new int[]{64, 59, 55, 50, 45, 40};
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Failed to parse tuning JSON: " + e.getMessage());
+                        tuningName = "Standard";
+                        midiNotes = new int[]{64, 59, 55, 50, 45, 40};
+                    }
+                } else {
+                    // Default to standard tuning if no tab loaded
+                    tuningName = "Standard (EADGBE)";
+                    midiNotes = new int[]{64, 59, 55, 50, 45, 40};
+                }
+                
+                // Create tuning session
+                currentTuningSession = repository.createTuningSession(tuningName, midiNotes);
+                
+                SwingUtilities.invokeLater(() -> {
+                    showTuningDialog();
+                });
+                
+            } catch (Exception e) {
+                System.err.println("Failed to start tuning mode: " + e.getMessage());
+                e.printStackTrace();
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(this,
+                            "Failed to start tuning: " + e.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                });
+            }
+        });
+    }
+    
+    /**
+     * Shows the tuning dialog with real-time pitch feedback.
+     */
+    private void showTuningDialog() {
+        if (currentTuningSession == null) {
+            return;
+        }
+        
+        JDialog dialog = new JDialog(this, "Guitar Tuner - " + currentTuningSession.tuningName(), false);
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setSize(400, 350);
+        dialog.setLocationRelativeTo(this);
+        
+        // Main tuning panel
+        tuningPanel = new JPanel();
+        tuningPanel.setLayout(new BoxLayout(tuningPanel, BoxLayout.Y_AXIS));
+        tuningPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        tuningPanel.setBackground(new Color(30, 30, 30));
+        
+        // String indicator
+        tuningStringLabel = new JLabel("String 1");
+        tuningStringLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
+        tuningStringLabel.setForeground(Color.WHITE);
+        tuningStringLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        tuningPanel.add(tuningStringLabel);
+        tuningPanel.add(Box.createVerticalStrut(10));
+        
+        // Target note
+        tuningNoteLabel = new JLabel("E4 (329.63 Hz)");
+        tuningNoteLabel.setFont(new Font("SansSerif", Font.PLAIN, 18));
+        tuningNoteLabel.setForeground(new Color(150, 150, 150));
+        tuningNoteLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        tuningPanel.add(tuningNoteLabel);
+        tuningPanel.add(Box.createVerticalStrut(20));
+        
+        // Tuning meter (progress bar showing cents deviation)
+        tuningMeter = new JProgressBar(-50, 50);
+        tuningMeter.setValue(0);
+        tuningMeter.setStringPainted(true);
+        tuningMeter.setString("Play string...");
+        tuningMeter.setPreferredSize(new Dimension(300, 30));
+        tuningMeter.setMaximumSize(new Dimension(300, 30));
+        tuningMeter.setAlignmentX(Component.CENTER_ALIGNMENT);
+        tuningPanel.add(tuningMeter);
+        tuningPanel.add(Box.createVerticalStrut(10));
+        
+        // Cents display
+        tuningCentsLabel = new JLabel("--");
+        tuningCentsLabel.setFont(new Font("SansSerif", Font.BOLD, 36));
+        tuningCentsLabel.setForeground(Color.WHITE);
+        tuningCentsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        tuningPanel.add(tuningCentsLabel);
+        tuningPanel.add(Box.createVerticalStrut(10));
+        
+        // Status label
+        tuningStatusLabel = new JLabel("Waiting for input...");
+        tuningStatusLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        tuningStatusLabel.setForeground(new Color(150, 150, 150));
+        tuningStatusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        tuningPanel.add(tuningStatusLabel);
+        
+        dialog.add(tuningPanel, BorderLayout.CENTER);
+        
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        buttonPanel.setBackground(new Color(40, 40, 40));
+        
+        JButton prevBtn = new JButton("← Previous");
+        prevBtn.addActionListener(e -> {
+            repository.tuningPreviousString();
+            updateTuningDisplay(null);
+        });
+        buttonPanel.add(prevBtn);
+        
+        JButton nextBtn = new JButton("Next →");
+        nextBtn.addActionListener(e -> {
+            if (!repository.tuningNextString()) {
+                // All strings done
+                JOptionPane.showMessageDialog(dialog,
+                        "All strings tuned!",
+                        "Tuning Complete", JOptionPane.INFORMATION_MESSAGE);
+            }
+            updateTuningDisplay(null);
+        });
+        buttonPanel.add(nextBtn);
+        
+        JButton doneBtn = new JButton("Done");
+        doneBtn.addActionListener(e -> {
+            stopTuningMode();
+            dialog.dispose();
+        });
+        buttonPanel.add(doneBtn);
+        
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        // String selection panel (shows all strings)
+        JPanel stringsPanel = new JPanel(new GridLayout(1, currentTuningSession.totalStrings(), 5, 5));
+        stringsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        stringsPanel.setBackground(new Color(40, 40, 40));
+        
+        for (int i = 0; i < currentTuningSession.totalStrings(); i++) {
+            TuningString ts = currentTuningSession.strings().get(i);
+            JButton stringBtn = new JButton(ts.noteName());
+            stringBtn.setToolTipText("String " + ts.stringNumber() + ": " + ts.noteName());
+            final int idx = i;
+            stringBtn.addActionListener(e -> {
+                // Jump to this string
+                while (currentTuningSession.currentStringIndex() > idx) {
+                    repository.tuningPreviousString();
+                }
+                while (currentTuningSession.currentStringIndex() < idx) {
+                    repository.tuningNextString();
+                }
+                updateTuningDisplay(null);
+            });
+            stringsPanel.add(stringBtn);
+        }
+        dialog.add(stringsPanel, BorderLayout.NORTH);
+        
+        // Update display for first string
+        updateTuningDisplay(null);
+        
+        // Start tuning detection
+        tuningMode = true;
+        tuneBtn.setText("Stop Tune");
+        statusLabel.setText("Tuning mode active");
+        
+        repository.startTuning(currentTuningSession, selectedAudioDevice, this::onTuningUpdate);
+        
+        // Handle dialog close
+        dialog.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                stopTuningMode();
+            }
+        });
+        
+        dialog.setVisible(true);
+    }
+    
+    /**
+     * Called when tuning detection provides an update.
+     */
+    private void onTuningUpdate(GuitarTunerService.TuningUpdate update) {
+        SwingUtilities.invokeLater(() -> updateTuningDisplay(update));
+    }
+    
+    /**
+     * Updates the tuning display with current detection results.
+     */
+    private void updateTuningDisplay(GuitarTunerService.TuningUpdate update) {
+        if (currentTuningSession == null) return;
+        
+        TuningString currentString = currentTuningSession.currentString();
+        
+        // Update string label
+        if (tuningStringLabel != null) {
+            tuningStringLabel.setText("String " + currentString.stringNumber());
+        }
+        
+        // Update note label
+        if (tuningNoteLabel != null) {
+            tuningNoteLabel.setText(String.format("%s (%.2f Hz)", 
+                    currentString.noteName(), currentString.targetFrequencyHz()));
+        }
+        
+        if (update == null) {
+            // Just updating for string change, reset display
+            if (tuningMeter != null) {
+                tuningMeter.setValue(0);
+                tuningMeter.setString("Play string...");
+                tuningMeter.setForeground(new Color(100, 100, 100));
+            }
+            if (tuningCentsLabel != null) {
+                tuningCentsLabel.setText("--");
+                tuningCentsLabel.setForeground(Color.WHITE);
+            }
+            if (tuningStatusLabel != null) {
+                tuningStatusLabel.setText("Waiting for input...");
+                tuningStatusLabel.setForeground(new Color(150, 150, 150));
+            }
+            return;
+        }
+        
+        // Update based on tuning status
+        double cents = update.centsDeviation();
+        GuitarTunerService.TuningStatus status = update.status();
+        
+        if (tuningMeter != null) {
+            int meterValue = (int) Math.max(-50, Math.min(50, cents));
+            tuningMeter.setValue(meterValue);
+            tuningMeter.setString(update.getDeviationDisplay());
+            
+            // Color based on status
+            switch (status) {
+                case IN_TUNE -> tuningMeter.setForeground(new Color(34, 197, 94)); // Green
+                case ALMOST -> tuningMeter.setForeground(new Color(234, 179, 8)); // Yellow
+                case FLAT, SHARP -> tuningMeter.setForeground(new Color(239, 68, 68)); // Red
+                default -> tuningMeter.setForeground(new Color(100, 100, 100)); // Gray
+            }
+        }
+        
+        if (tuningCentsLabel != null) {
+            if (status == GuitarTunerService.TuningStatus.WAITING) {
+                tuningCentsLabel.setText("--");
+                tuningCentsLabel.setForeground(Color.WHITE);
+            } else if (status == GuitarTunerService.TuningStatus.IN_TUNE) {
+                tuningCentsLabel.setText("✓");
+                tuningCentsLabel.setForeground(new Color(34, 197, 94));
+            } else {
+                String sign = cents > 0 ? "+" : "";
+                tuningCentsLabel.setText(String.format("%s%.0f", sign, cents));
+                tuningCentsLabel.setForeground(cents > 0 ? new Color(239, 68, 68) : new Color(59, 130, 246));
+            }
+        }
+        
+        if (tuningStatusLabel != null) {
+            switch (status) {
+                case WAITING -> {
+                    tuningStatusLabel.setText("Play string " + currentString.stringNumber() + "...");
+                    tuningStatusLabel.setForeground(new Color(150, 150, 150));
+                }
+                case FLAT -> {
+                    tuningStatusLabel.setText("↑ Tune UP (too flat)");
+                    tuningStatusLabel.setForeground(new Color(59, 130, 246));
+                }
+                case SHARP -> {
+                    tuningStatusLabel.setText("↓ Tune DOWN (too sharp)");
+                    tuningStatusLabel.setForeground(new Color(239, 68, 68));
+                }
+                case ALMOST -> {
+                    tuningStatusLabel.setText("Almost there! Hold steady...");
+                    tuningStatusLabel.setForeground(new Color(234, 179, 8));
+                }
+                case IN_TUNE -> {
+                    tuningStatusLabel.setText("In tune! Press Next for next string.");
+                    tuningStatusLabel.setForeground(new Color(34, 197, 94));
+                }
+            }
+        }
+    }
+    
+    /**
+     * Stops tuning mode.
+     */
+    private void stopTuningMode() {
+        tuningMode = false;
+        repository.stopTuning();
+        currentTuningSession = null;
+        
+        SwingUtilities.invokeLater(() -> {
+            tuneBtn.setText("Tune");
+            statusLabel.setText("Ready");
+        });
+    }
+    
+    // ==================== End Tuning Mode Methods ====================
 }

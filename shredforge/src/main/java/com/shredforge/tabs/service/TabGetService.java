@@ -6,7 +6,6 @@ import com.shredforge.tabs.model.SongSelection;
 import com.shredforge.tabs.model.TabSearchRequest;
 
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -52,9 +51,9 @@ public final class TabGetService {
         return dao.downloadGpFile(selection)
             .thenApply(gpPath -> TabData.fromGpFile(
                 buildSourceId(selection),
-                selection.toSongRequest(),
-                gpPath,
-                Instant.now()
+                selection.title(),
+                selection.artist(),
+                gpPath
             ));
     }
 

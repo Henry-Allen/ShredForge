@@ -1298,6 +1298,146 @@
       };
 
       // ==================== End Practice Mode Functions ====================
+
+      // ==================== Tuning Mode Functions ====================
+
+      /**
+       * Extracts the tuning information from the currently selected track.
+       * Returns a JSON object with tuning name and MIDI note numbers for each string.
+       * The tuning array is ordered from highest string (1) to lowest string (6).
+       */
+      window.extractTrackTuning = function (trackIndex) {
+        try {
+          const api = ensureApi();
+          if (!api || !api.score) {
+            console.log('No score loaded for tuning extraction');
+            return JSON.stringify({ tuningName: 'Standard', midiNotes: [64, 59, 55, 50, 45, 40] });
+          }
+
+          const score = api.score;
+          const targetTrackIndex = typeof trackIndex === 'number' ? trackIndex : window.getCurrentTrackIndex();
+
+          if (!score.tracks || score.tracks.length === 0) {
+            return JSON.stringify({ tuningName: 'Standard', midiNotes: [64, 59, 55, 50, 45, 40] });
+          }
+
+          const track = score.tracks[Math.min(targetTrackIndex, score.tracks.length - 1)];
+          if (!track || !track.staves || track.staves.length === 0) {
+            return JSON.stringify({ tuningName: 'Standard', midiNotes: [64, 59, 55, 50, 45, 40] });
+          }
+
+          // Get the first staff (usually the main guitar staff)
+          const staff = track.staves[0];
+
+          // AlphaTab stores tuning as an array of MIDI note numbers
+          // staff.tuning is an array where index 0 = string 1 (highest), etc.
+          let tuning = staff.tuning || staff.stringTuning;
+
+          console.log('Raw tuning from AlphaTab:', tuning, 'staff:', staff);
+
+          if (!tuning || tuning.length === 0) {
+            // Fallback to standard tuning
+            tuning = [64, 59, 55, 50, 45, 40]; // E4, B3, G3, D3, A2, E2
+          } else {
+            // Convert to array if needed and validate MIDI values
+            tuning = Array.from(tuning);
+
+            // AlphaTab sometimes stores tuning values that need adjustment
+            // Valid guitar MIDI notes are roughly 28 (E1) to 84 (C6)
+            // If values are too small, they might be fret offsets from standard tuning
+            const standardTuning = [64, 59, 55, 50, 45, 40]; // E4, B3, G3, D3, A2, E2
+
+            // Check if values look like MIDI notes (should be > 20 for guitar)
+            const looksLikeMidi = tuning.every((v) => v >= 20 && v <= 100);
+
+            if (!looksLikeMidi) {
+              console.log('Tuning values look like offsets, converting from standard tuning');
+              // Values might be semitone offsets from standard tuning
+              tuning = tuning.map((offset, i) => {
+                const base = i < standardTuning.length ? standardTuning[i] : 40;
+                return base + (offset || 0);
+              });
+            }
+          }
+
+          // Determine tuning name based on the notes
+          const tuningName = identifyTuningName(tuning);
+
+          console.log('Extracted tuning for track ' + targetTrackIndex + ':', tuningName, tuning);
+
+          return JSON.stringify({
+            tuningName: tuningName,
+            midiNotes: tuning,
+            trackName: track.name || 'Track ' + (targetTrackIndex + 1),
+          });
+        } catch (e) {
+          console.error('Error extracting tuning:', e);
+          return JSON.stringify({ tuningName: 'Standard', midiNotes: [64, 59, 55, 50, 45, 40] });
+        }
+      };
+
+      /**
+       * Identifies the tuning name based on MIDI note numbers.
+       */
+      function identifyTuningName(midiNotes) {
+        if (!midiNotes || midiNotes.length === 0) return 'Unknown';
+
+        // Common 6-string guitar tunings (MIDI notes from high to low)
+        const knownTunings = {
+          'Standard (EADGBE)': [64, 59, 55, 50, 45, 40],
+          'Drop D': [64, 59, 55, 50, 45, 38],
+          'Eb Standard': [63, 58, 54, 49, 44, 39],
+          'D Standard': [62, 57, 53, 48, 43, 38],
+          'Drop C': [62, 57, 53, 48, 43, 36],
+          'C Standard': [60, 55, 51, 46, 41, 36],
+          'Open G': [62, 59, 55, 50, 47, 38],
+          'Open D': [62, 57, 54, 50, 45, 38],
+          DADGAD: [62, 57, 55, 50, 45, 38],
+        };
+
+        // Check for exact match
+        for (const [name, notes] of Object.entries(knownTunings)) {
+          if (midiNotes.length === notes.length) {
+            let match = true;
+            for (let i = 0; i < notes.length; i++) {
+              if (midiNotes[i] !== notes[i]) {
+                match = false;
+                break;
+              }
+            }
+            if (match) return name;
+          }
+        }
+
+        // Build a custom name from the note names
+        const noteNames = midiNotes.map((midi) => {
+          const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+          return names[midi % 12];
+        });
+
+        // Reverse to show low to high (traditional tuning notation)
+        return noteNames.slice().reverse().join('');
+      }
+
+      /**
+       * Sends the current track's tuning to Java via cefQuery.
+       */
+      window.sendTuningToJava = function (trackIndex) {
+        const tuningJson = window.extractTrackTuning(trackIndex);
+        if (window.cefQuery) {
+          window.cefQuery({
+            request: 'tuning:' + tuningJson,
+            onSuccess: function (response) {
+              console.log('Tuning sent to Java');
+            },
+            onFailure: function (errorCode, errorMessage) {
+              console.error('Failed to send tuning:', errorMessage);
+            },
+          });
+        }
+      };
+
+      // ==================== End Tuning Mode Functions ====================
     </script>
   </body>
 </html>

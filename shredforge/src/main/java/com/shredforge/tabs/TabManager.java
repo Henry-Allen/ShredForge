@@ -1,15 +1,12 @@
 package com.shredforge.tabs;
 
-import com.shredforge.core.model.SongRequest;
 import com.shredforge.core.model.TabData;
-import com.shredforge.core.ports.TabGateway;
 import com.shredforge.tabs.dao.TabDataDao;
 import com.shredforge.tabs.model.SongSelection;
 import com.shredforge.tabs.model.TabSearchRequest;
 import com.shredforge.tabs.service.TabGetService;
 
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -21,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
  * return GP files that contain all tracks for the song. Downloads use direct HTTP
  * to Songsterr's API rather than browser automation.
  */
-public final class TabManager implements TabGateway {
+public final class TabManager {
 
     private final TabDataDao dao;
     private final TabGetService getService;
@@ -63,9 +60,9 @@ public final class TabManager implements TabGateway {
         return getService.findExistingGpFile(selection)
                 .map(path -> TabData.fromGpFile(
                         TabGetService.buildSourceId(selection),
-                        selection.toSongRequest(),
-                        path,
-                        Instant.now()
+                        selection.title(),
+                        selection.artist(),
+                        path
                 ));
     }
 
@@ -87,38 +84,5 @@ public final class TabManager implements TabGateway {
      */
     public Path getGpStorageDir() {
         return dao.getGpStorageDir();
-    }
-
-    // --- TabGateway implementation (simplified for GP-only workflow) ---
-
-    @Override
-    public TabData fetchTab(SongRequest request) {
-        // Search for matching song
-        List<SongSelection> results = searchSongs(new TabSearchRequest(
-                request.title() != null ? request.title() : request.artist()));
-        
-        SongSelection match = results.stream()
-                .filter(s -> matches(s, request))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Unable to locate a song for " + request.displayName() + ". Try searching first."));
-        
-        // Check for cached GP file first
-        return findCachedGpFile(match)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "No cached GP file for " + request.displayName() + ". Download it first."));
-    }
-
-    @Override
-    public void persistTab(TabData tabData) {
-        // GP files are automatically persisted during download - nothing to do here
-    }
-
-    private static boolean matches(SongSelection selection, SongRequest request) {
-        boolean titleMatch = request.title() == null
-                || selection.title().equalsIgnoreCase(request.title().trim());
-        boolean artistMatch = request.artist() == null
-                || selection.artist().equalsIgnoreCase(request.artist().trim());
-        return titleMatch && artistMatch;
     }
 }

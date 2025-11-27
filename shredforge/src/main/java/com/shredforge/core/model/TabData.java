@@ -5,66 +5,39 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Raw tablature data as returned by an external source.
+ * Represents a downloaded Guitar Pro file for a song.
  * 
- * <p>Supports two content types:
- * <ul>
- *   <li><b>JSON content</b>: Songsterr's internal JSON format (stored in {@code rawContent})</li>
- *   <li><b>GP file</b>: Guitar Pro binary file (stored at {@code gpFilePath})</li>
- * </ul>
- * 
- * <p>When a GP file is available, it should be preferred for rendering as it contains
- * the complete tab data in a standard format that AlphaTab can directly consume.
+ * <p>GP files contain the complete tab data in a standard format that AlphaTab can directly consume.
  */
 public record TabData(
         String sourceId, 
-        SongRequest song, 
-        String rawContent, 
-        Instant fetchedAt, 
-        Path cachedLocation,
-        Path gpFilePath) {
+        String title,
+        String artist,
+        Path gpFilePath,
+        Instant fetchedAt) {
 
     /**
-     * Creates TabData with all fields.
+     * Creates TabData for a GP file.
      */
     public TabData {
-        Objects.requireNonNull(song, "song");
-        // rawContent can be null if we only have a GP file
-        if (rawContent == null && gpFilePath == null) {
-            throw new IllegalArgumentException("Either rawContent or gpFilePath must be provided");
-        }
+        Objects.requireNonNull(sourceId, "sourceId");
+        Objects.requireNonNull(title, "title");
+        Objects.requireNonNull(artist, "artist");
+        Objects.requireNonNull(gpFilePath, "gpFilePath");
         fetchedAt = fetchedAt == null ? Instant.now() : fetchedAt;
     }
 
     /**
-     * Backwards-compatible constructor without GP file path.
+     * Creates TabData from a GP file path.
      */
-    public TabData(String sourceId, SongRequest song, String rawContent, Instant fetchedAt, Path cachedLocation) {
-        this(sourceId, song, rawContent, fetchedAt, cachedLocation, null);
+    public static TabData fromGpFile(String sourceId, String title, String artist, Path gpFilePath) {
+        return new TabData(sourceId, title, artist, gpFilePath, Instant.now());
     }
 
     /**
-     * Creates TabData with only a GP file (no JSON content).
+     * Display name for the song.
      */
-    public static TabData fromGpFile(String sourceId, SongRequest song, Path gpFilePath, Instant fetchedAt) {
-        return new TabData(sourceId, song, null, fetchedAt, null, gpFilePath);
-    }
-
-    public boolean isCachedLocally() {
-        return cachedLocation != null;
-    }
-
-    /**
-     * Returns true if this tab has a Guitar Pro file available.
-     */
-    public boolean hasGpFile() {
-        return gpFilePath != null;
-    }
-
-    /**
-     * Returns true if this tab has JSON content available.
-     */
-    public boolean hasJsonContent() {
-        return rawContent != null && !rawContent.isBlank();
+    public String displayName() {
+        return title + " — " + artist;
     }
 }

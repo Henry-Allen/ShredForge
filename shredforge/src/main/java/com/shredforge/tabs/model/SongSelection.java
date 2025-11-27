@@ -1,6 +1,5 @@
 package com.shredforge.tabs.model;
 
-import com.shredforge.core.model.SongRequest;
 import com.shredforge.tabs.dao.TabDataDao;
 import java.util.List;
 import java.util.Objects;
@@ -40,19 +39,6 @@ public record SongSelection(
      */
     public String songKey() {
         return String.valueOf(songId);
-    }
-
-    /**
-     * Converts to a SongRequest for use with the core domain.
-     */
-    public SongRequest toSongRequest() {
-        String instruments = tracks.isEmpty() ? "Unknown" : 
-                tracks.stream()
-                        .map(TrackInfo::instrument)
-                        .distinct()
-                        .reduce((a, b) -> a + ", " + b)
-                        .orElse("Unknown");
-        return new SongRequest(title, artist, instruments, "N/A");
     }
 
     /**

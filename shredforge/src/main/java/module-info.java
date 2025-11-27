@@ -13,12 +13,10 @@ module com.shredforge {
     exports com.shredforge;
     exports com.shredforge.core;
     exports com.shredforge.core.model;
-    exports com.shredforge.core.ports;
     exports com.shredforge.tabs;
     exports com.shredforge.tabs.model;
-    exports com.shredforge.tabview;
-    exports com.shredforge.tabview.render;
     exports com.shredforge.scoring;
+    exports com.shredforge.calibration;
     exports com.shredforge.scoring.model;
     exports com.shredforge.scoring.detection;
     exports com.shredforge.ui;
