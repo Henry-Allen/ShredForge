@@ -10,8 +10,8 @@
             <maven.compiler.target>17</maven.compiler.target>
             <!-- JCEF version -->
             <jcef.version>122.1.10</jcef.version>
-            <!-- Skip Windows installer by default; enabled only on Windows via a profile -->
-            <skip.windows.installer>true</skip.windows.installer>
+            <!-- Skip installers by default; only run when explicitly requested -->
+            <skip.installer>true</skip.installer>
         </properties>
         <repositories>
             <repository>
@@ -121,12 +121,11 @@
             </plugins>
         </build>
         <profiles>
+            <!-- Mac app image profile - run with: mvn package -Pmac-installer -Dskip.installer=false -->
             <profile>
-                <id>mac-app-image</id>
+                <id>mac-installer</id>
                 <activation>
-                    <os>
-                        <family>mac</family>
-                    </os>
+                    <activeByDefault>false</activeByDefault>
                 </activation>
                 <properties>
                     <app.name>ShredForge</app.name>
@@ -139,12 +138,13 @@
                             <version>3.3.0</version>
                             <executions>
                                 <execution>
-                                    <id>run-jpackage</id>
+                                    <id>run-jpackage-mac</id>
                                     <phase>package</phase>
                                     <goals>
                                         <goal>exec</goal>
                                     </goals>
                                     <configuration>
+                                        <skip>${skip.installer}</skip>
                                         <executable>jpackage</executable>
                                         <arguments>
                                             <argument>--type</argument>
@@ -158,13 +158,17 @@
                                             <argument>--main-jar</argument>
                                             <argument>${project.build.finalName}.jar</argument>
                                             <argument>--main-class</argument>
-                                            <argument>com.shredforge.App</argument>
-                                            <argument>--runtime-image</argument>
-                                            <argument>${project.build.directory}/image</argument>
+                                            <argument>com.shredforge.SwingApp</argument>
                                             <argument>--dest</argument>
                                             <argument>${project.build.directory}/jpackage</argument>
                                             <argument>--java-options</argument>
-                                            <argument>--enable-native-access=javafx.graphics</argument>
+                                            <argument>--add-opens=java.desktop/sun.awt=ALL-UNNAMED</argument>
+                                            <argument>--java-options</argument>
+                                            <argument>--add-opens=java.desktop/java.awt=ALL-UNNAMED</argument>
+                                            <argument>--java-options</argument>
+                                            <argument>--add-opens=java.desktop/sun.lwawt=ALL-UNNAMED</argument>
+                                            <argument>--java-options</argument>
+                                            <argument>--add-opens=java.desktop/sun.lwawt.macosx=ALL-UNNAMED</argument>
                                         </arguments>
                                     </configuration>
                                 </execution>
@@ -173,16 +177,26 @@
                     </plugins>
                 </build>
             </profile>
+            <!-- Mac OS detection for platform-specific dependencies -->
             <profile>
-                <id>windows-installer</id>
+                <id>mac-os</id>
                 <activation>
                     <os>
-                        <family>windows</family>
+                        <family>mac</family>
                     </os>
                 </activation>
                 <properties>
+                    <javafx.platform>mac</javafx.platform>
+                </properties>
+            </profile>
+            <!-- Windows installer profile - run with: mvn package -Pwindows-installer -Dskip.installer=false -->
+            <profile>
+                <id>windows-installer</id>
+                <activation>
+                    <activeByDefault>false</activeByDefault>
+                </activation>
+                <properties>
                     <app.name>ShredForge</app.name>
-                    <javafx.platform>win</javafx.platform>
                 </properties>
                 <build>
                     <plugins>
@@ -198,7 +212,7 @@
                                         <goal>exec</goal>
                                     </goals>
                                     <configuration>
-                                        <skip>${skip.windows.installer}</skip>
+                                        <skip>${skip.installer}</skip>
                                         <executable>jpackage</executable>
                                         <arguments>
                                             <argument>--type</argument>
@@ -212,13 +226,13 @@
                                             <argument>--main-jar</argument>
                                             <argument>${project.build.finalName}.jar</argument>
                                             <argument>--main-class</argument>
-                                            <argument>com.shredforge.App</argument>
-                                            <argument>--runtime-image</argument>
-                                            <argument>${project.build.directory}/image</argument>
+                                            <argument>com.shredforge.SwingApp</argument>
                                             <argument>--dest</argument>
                                             <argument>${project.build.directory}/jpackage</argument>
                                             <argument>--java-options</argument>
-                                            <argument>--enable-native-access=javafx.graphics</argument>
+                                            <argument>--add-opens=java.desktop/sun.awt=ALL-UNNAMED</argument>
+                                            <argument>--java-options</argument>
+                                            <argument>--add-opens=java.desktop/java.awt=ALL-UNNAMED</argument>
                                             <argument>--win-shortcut</argument>
                                         </arguments>
                                     </configuration>
@@ -228,6 +242,7 @@
                     </plugins>
                 </build>
             </profile>
+            <!-- Windows OS detection for platform-specific dependencies -->
             <profile>
                 <id>windows-os</id>
                 <activation>
@@ -236,9 +251,6 @@
                     </os>
                 </activation>
                 <properties>
-                    <!-- Enable Windows installer execution on Windows hosts -->
-                    <skip.windows.installer>false</skip.windows.installer>
-                    <!-- Ensure JavaFX resolves Windows artifacts when building on Windows -->
                     <javafx.platform>win</javafx.platform>
                 </properties>
             </profile>
