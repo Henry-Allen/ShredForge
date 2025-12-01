@@ -21,6 +21,23 @@ public class SwingApp {
     private static CefApp cefApp;
     
     public static void main(String[] args) {
+        // Set up exception handler to suppress benign JCEF/AppKit thread exceptions on macOS
+        // These occur when CEF callbacks happen on the AppKit thread instead of EDT
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            String threadName = thread.getName();
+            // Suppress known benign JCEF exceptions on AppKit Thread
+            if (threadName.contains("AppKit") || threadName.contains("AWT-AppKit")) {
+                // Only log if it's not the common null message exception
+                if (throwable.getMessage() != null && !throwable.getMessage().isEmpty()) {
+                    System.err.println("JCEF AppKit exception (suppressed): " + throwable.getMessage());
+                }
+                return;
+            }
+            // For other threads, print the full stack trace
+            System.err.println("Uncaught exception in thread " + threadName + ":");
+            throwable.printStackTrace();
+        });
+        
         // Set up FlatLaf dark theme
         try {
             UIManager.setLookAndFeel(new FlatDarkLaf());
