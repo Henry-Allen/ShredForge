@@ -69,6 +69,7 @@ public class MainFrame extends JFrame {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private JButton practiceBtn;
     private JButton audioSelectBtn;
+    private JSpinner timingToleranceSpinner;
     private JLabel scoreLabel;
     private AudioDeviceInfo selectedAudioDevice = AudioDeviceInfo.systemDefault();
     private volatile boolean practiceMode = false;
@@ -343,6 +344,22 @@ public class MainFrame extends JFrame {
         audioSelectBtn = new JButton("Audio: System Default");
         audioSelectBtn.addActionListener(e -> showAudioDeviceSelector());
         toolbar.add(audioSelectBtn);
+        
+        toolbar.addSeparator();
+        
+        // Timing tolerance spinner (ms)
+        JLabel toleranceLabel = new JLabel("Tolerance:");
+        toleranceLabel.setToolTipText("Timing tolerance in milliseconds (window is ±this value)");
+        toolbar.add(toleranceLabel);
+        
+        SpinnerNumberModel toleranceModel = new SpinnerNumberModel(150, 50, 500, 25);
+        timingToleranceSpinner = new JSpinner(toleranceModel);
+        timingToleranceSpinner.setToolTipText("Timing tolerance in ms (default: 150)");
+        timingToleranceSpinner.setMaximumSize(new Dimension(70, 25));
+        timingToleranceSpinner.setPreferredSize(new Dimension(70, 25));
+        toolbar.add(timingToleranceSpinner);
+        
+        toolbar.add(new JLabel("ms"));
         
         toolbar.addSeparator();
         
@@ -1086,28 +1103,34 @@ public class MainFrame extends JFrame {
                     selectedDevice = AudioDeviceInfo.systemDefault();
                 }
                 
-                // Create practice config
+                // Create practice config with user-selected timing tolerance
+                double timingTolerance = ((Number) timingToleranceSpinner.getValue()).doubleValue();
                 PracticeConfig config = repository.defaultPracticeConfig()
-                        .withAudioDevice(selectedDevice);
+                        .withAudioDevice(selectedDevice)
+                        .withTimingTolerance(timingTolerance);
                 
                 // Set up note result listener for visual feedback
                 repository.setNoteResultListener(new com.shredforge.scoring.LivePracticeScoringService.NoteResultListener() {
                     @Override
                     public void onNoteHit(com.shredforge.core.model.ExpectedNote note, int noteIndex) {
-                        // Note hit - show green feedback
+                        // Note hit - show green feedback with string and fret info
                         SwingUtilities.invokeLater(() -> {
-                            String js = String.format("window.markNoteResult('%s', true);",
-                                    note.noteName().replace("'", "\\'"));
+                            String js = String.format("window.markNoteResult('%s', true, %d, %d);",
+                                    note.noteName().replace("'", "\\'"),
+                                    note.string(),
+                                    note.fret());
                             browser.executeJavaScript(js, "", 0);
                         });
                     }
                     
                     @Override
                     public void onNoteMissed(com.shredforge.core.model.ExpectedNote note, int noteIndex) {
-                        // Note missed - show red feedback
+                        // Note missed - show red feedback with string and fret info
                         SwingUtilities.invokeLater(() -> {
-                            String js = String.format("window.markNoteResult('%s', false);",
-                                    note.noteName().replace("'", "\\'"));
+                            String js = String.format("window.markNoteResult('%s', false, %d, %d);",
+                                    note.noteName().replace("'", "\\'"),
+                                    note.string(),
+                                    note.fret());
                             browser.executeJavaScript(js, "", 0);
                         });
                     }
@@ -1115,6 +1138,9 @@ public class MainFrame extends JFrame {
                 
                 // Show the feedback panel
                 browser.executeJavaScript("window.showPracticeFeedback && window.showPracticeFeedback();", "", 0);
+                
+                // Lock tempo to 1x for practice mode (avoids sync issues)
+                browser.executeJavaScript("window.lockTempoForPractice && window.lockTempoForPractice();", "", 0);
                 
                 // Start the practice session
                 repository.startPracticeSession(config, this::onScoreUpdate);
@@ -1155,6 +1181,9 @@ public class MainFrame extends JFrame {
         
         // Tell AlphaTab to stop position updates and clear note highlights
         browser.executeJavaScript("window.stopPositionUpdates && window.stopPositionUpdates(); window.clearNoteHighlights && window.clearNoteHighlights();", "", 0);
+        
+        // Unlock tempo (restore previous value)
+        browser.executeJavaScript("window.unlockTempo && window.unlockTempo();", "", 0);
         
         // Clear the note result listener
         repository.setNoteResultListener(null);
