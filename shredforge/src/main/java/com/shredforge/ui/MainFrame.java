@@ -828,7 +828,7 @@ public class MainFrame extends JFrame {
      */
     private void handleSongsterrPage(CefBrowser browser, String url) {
         SwingUtilities.invokeLater(() -> {
-            statusLabel.setText("On Songsterr - click download button for GP file");
+            statusLabel.setText("On Songsterr - click Export → Guitar Pro to download");
             backToAlphaTabBtn.setVisible(true);
         });
         
@@ -841,10 +841,82 @@ public class MainFrame extends JFrame {
                 if (songsterrEmail != null && songsterrPassword != null && !loginAttempted) {
                     attemptAutoLogin(browser);
                 }
+                
+                // After login attempt (or if already logged in), show download tooltip
+                Thread.sleep(2000);
+                injectDownloadTooltip(browser);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         });
+    }
+    
+    /**
+     * Injects a tooltip overlay on Songsterr to guide users to click Export → Guitar Pro.
+     */
+    private void injectDownloadTooltip(CefBrowser browser) {
+        String tooltipJs = """
+            (function() {
+                // Remove any existing tooltip
+                var existing = document.getElementById('shredforge-download-tooltip');
+                if (existing) existing.remove();
+                
+                // Create tooltip container
+                var tooltip = document.createElement('div');
+                tooltip.id = 'shredforge-download-tooltip';
+                tooltip.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 80px;
+                        right: 20px;
+                        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+                        border: 2px solid #4a90d9;
+                        border-radius: 12px;
+                        padding: 16px 20px;
+                        z-index: 10000;
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                        color: #ffffff;
+                        box-shadow: 0 8px 32px rgba(74, 144, 217, 0.3);
+                        max-width: 280px;
+                        animation: shredforge-pulse 2s ease-in-out infinite;
+                    ">
+                        <style>
+                            @keyframes shredforge-pulse {
+                                0%, 100% { box-shadow: 0 8px 32px rgba(74, 144, 217, 0.3); }
+                                50% { box-shadow: 0 8px 40px rgba(74, 144, 217, 0.5); }
+                            }
+                        </style>
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <strong style="font-size: 15px;">Download Tab</strong>
+                            <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                                    style="margin-left: auto; background: none; border: none; color: #888; cursor: pointer; font-size: 18px; padding: 0 4px;">×</button>
+                        </div>
+                        <div style="font-size: 13px; line-height: 1.5; color: #ccc;">
+                            <p style="margin: 0 0 8px 0;">To download this tab:</p>
+                            <ol style="margin: 0; padding-left: 20px;">
+                                <li style="margin-bottom: 4px;">Click <strong style="color: #4a90d9;">Export</strong> in the toolbar</li>
+                                <li>Select <strong style="color: #4a90d9;">Guitar Pro</strong></li>
+                            </ol>
+                            <p style="margin: 10px 0 0 0; font-size: 11px; color: #888;">
+                                The file will automatically load in ShredForge.
+                            </p>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(tooltip);
+                
+                // Auto-hide after 30 seconds
+                setTimeout(function() {
+                    var el = document.getElementById('shredforge-download-tooltip');
+                    if (el) el.remove();
+                }, 30000);
+                
+                console.log('ShredForge: Download tooltip injected');
+            })();
+            """;
+        
+        browser.executeJavaScript(tooltipJs, "", 0);
+        System.out.println("Injected download tooltip on Songsterr page");
     }
     
     /**

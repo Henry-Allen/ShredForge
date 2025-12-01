@@ -92,14 +92,27 @@
         min-width: 40px;
         text-align: right;
       }
+      /* Volume slider styling */
+      #at-volume {
+        width: 80px;
+      }
+      #at-volume-label {
+        min-width: 30px;
+        text-align: right;
+      }
+      .volume-icon {
+        font-size: 14px;
+        opacity: 0.8;
+      }
       #at-container {
         flex: 1 1 auto;
         min-height: 0;
+        overflow: auto;
+        position: relative;
       }
       #at {
         width: 100%;
-        height: 100%;
-        overflow: auto;
+        min-height: 100%;
       }
       /* Songsterr-style player visuals - no bar highlight, just cursor */
       #at svg .at-selection {
@@ -231,6 +244,9 @@
         <label for="at-tempo">Tempo</label>
         <input id="at-tempo" type="range" min="0.5" max="1.5" step="0.05" value="1.0" />
         <span id="at-tempo-label">1.0x</span>
+        <span class="volume-icon">🔊</span>
+        <input id="at-volume" type="range" min="0" max="1" step="0.05" value="1.0" title="Playback Volume" />
+        <span id="at-volume-label">100%</span>
       </div>
       <div id="at-container">
         <div id="at"></div>
@@ -246,6 +262,7 @@
       let playerDurationMs = 0;
       let playerPositionMs = 0;
       let playerReady = false;
+      let autoScrollEnabled = true; // Auto-scroll to keep cursor centered
 
       function ensureApi() {
         if (api) return api;
@@ -264,6 +281,7 @@
             enablePlayer: true,
             soundFont: sfUrl,
             scrollElement: document.getElementById('at-container'),
+            scrollOffsetY: -200, // Offset to keep cursor more centered
             enableCursor: true,
             enableUserInteraction: true,
             // Songsterr-style: beat cursor only, no bar highlighting
@@ -762,6 +780,8 @@
         const restartBtn = document.getElementById('at-restart');
         const tempoSlider = document.getElementById('at-tempo');
         const tempoLabel = document.getElementById('at-tempo-label');
+        const volumeSlider = document.getElementById('at-volume');
+        const volumeLabel = document.getElementById('at-volume-label');
         const statusLabel = document.getElementById('at-status');
         if (!playPauseBtn || !restartBtn || !tempoSlider || !tempoLabel) {
           return;
@@ -774,6 +794,11 @@
         function updateTempoLabel(value) {
           const v = typeof value === 'number' ? value : parseFloat(tempoSlider.value || '1');
           tempoLabel.textContent = v.toFixed(1) + 'x';
+        }
+
+        function updateVolumeLabel(value) {
+          const v = typeof value === 'number' ? value : parseFloat(volumeSlider.value || '1');
+          volumeLabel.textContent = Math.round(v * 100) + '%';
         }
 
         function updateProgressState() {
@@ -833,6 +858,27 @@
           }
         });
 
+        // Volume slider control
+        if (volumeSlider) {
+          volumeSlider.addEventListener('input', () => {
+            const v = parseFloat(volumeSlider.value || '1');
+            updateVolumeLabel(v);
+            try {
+              // AlphaTab uses masterVolume for overall playback volume (0-1)
+              if (typeof apiInstance.masterVolume !== 'undefined') {
+                apiInstance.masterVolume = v;
+              }
+              // Also try setting on the player if available
+              if (apiInstance.player && typeof apiInstance.player.masterVolume !== 'undefined') {
+                apiInstance.player.masterVolume = v;
+              }
+            } catch (e) {
+              console.log('Volume control error:', e);
+            }
+          });
+          updateVolumeLabel(parseFloat(volumeSlider.value || '1'));
+        }
+
         if (apiInstance.playerStateChanged && apiInstance.playerStateChanged.on) {
           apiInstance.playerStateChanged.on((e) => {
             let playing = false;
@@ -858,6 +904,11 @@
             if (typeof e.currentTime === 'number') {
               playerPositionMs = e.currentTime;
               updateProgressState();
+
+              // Auto-scroll to keep cursor centered
+              if (autoScrollEnabled) {
+                scrollCursorToCenter();
+              }
 
               // Send position to Java for practice mode scoring sync
               if (window.cefQuery) {
@@ -1298,6 +1349,77 @@
       };
 
       // ==================== End Practice Mode Functions ====================
+
+      // ==================== Auto-Scroll Functions ====================
+
+      /**
+       * Scrolls the tab container to keep the beat cursor centered vertically.
+       * Called during playback position updates when autoScrollEnabled is true.
+       */
+      let lastScrollTime = 0;
+      function scrollCursorToCenter() {
+        try {
+          // Throttle scroll updates to avoid jitter (max once per 100ms)
+          const now = Date.now();
+          if (now - lastScrollTime < 100) return;
+
+          const container = document.getElementById('at-container');
+          const cursor = document.querySelector('.at-cursor-beat');
+
+          if (!container || !cursor) {
+            return;
+          }
+
+          // Check if cursor is visible (has dimensions)
+          const cursorRect = cursor.getBoundingClientRect();
+          if (cursorRect.height === 0) return;
+
+          const containerRect = container.getBoundingClientRect();
+
+          // Calculate cursor center position relative to container viewport
+          const cursorCenterY = cursorRect.top + cursorRect.height / 2;
+          const containerCenterY = containerRect.top + containerRect.height / 2;
+
+          // Calculate how far the cursor is from center
+          const offsetFromCenter = cursorCenterY - containerCenterY;
+
+          // Define a "dead zone" - don't scroll if cursor is within middle 40% of screen
+          const deadZone = containerRect.height * 0.2;
+
+          if (Math.abs(offsetFromCenter) > deadZone) {
+            // Scroll to bring cursor to center
+            const newScrollTop = container.scrollTop + offsetFromCenter;
+
+            container.scrollTo({
+              top: Math.max(0, newScrollTop),
+              behavior: 'smooth',
+            });
+
+            lastScrollTime = now;
+          }
+        } catch (e) {
+          console.log('Scroll error:', e);
+        }
+      }
+
+      /**
+       * Enables or disables auto-scrolling during playback.
+       * @param {boolean} enabled - Whether auto-scroll should be enabled
+       */
+      window.setAutoScrollEnabled = function (enabled) {
+        autoScrollEnabled = !!enabled;
+        console.log('Auto-scroll ' + (autoScrollEnabled ? 'enabled' : 'disabled'));
+      };
+
+      /**
+       * Gets the current auto-scroll state.
+       * @returns {boolean} Whether auto-scroll is enabled
+       */
+      window.isAutoScrollEnabled = function () {
+        return autoScrollEnabled;
+      };
+
+      // ==================== End Auto-Scroll Functions ====================
 
       // ==================== Tuning Mode Functions ====================
 
