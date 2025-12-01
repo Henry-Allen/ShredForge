@@ -41,7 +41,7 @@ public record PracticeConfig(
         return new PracticeConfig(
                 AudioDeviceInfo.systemDefault(),
                 50.0,      // 50 cents pitch tolerance (half semitone)
-                550.0,     // 150ms timing tolerance
+                150.0,     // 150ms timing tolerance
                 0.7,       // 70% minimum confidence
                 44100f,    // 44.1kHz sample rate
                 4096,      // Buffer size for CQT (needs to be larger for low frequencies)
