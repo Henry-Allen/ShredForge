@@ -11,3 +11,12 @@ Alec will be the demo man
 11/25/2025
 Henry will continue to finish the code of the project
 Kevin and Alec will make sure the slides and other things are ready for the demo
+12/1/2025
+disscussed the presentation and demo
+descided who will do what
+filmed demo video
+12/2/2025
+finalized presentation talking points
+finalized UML for slides
+practiced presentaion
+
